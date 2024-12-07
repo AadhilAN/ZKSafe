@@ -2,9 +2,7 @@ const { getBalance, transferEther } = require('../Services/walletService');
 const { isAddress } = require('ethers');
 // Get Balance
 exports.getWalletBalance = async (req, res) => {
-    console.log("walletController.js");
     const { address } = req.query;
-
     try {
         if (!isAddress(address)) {
             return res.status(400).json({ message: 'Invalid Ethereum address' });
