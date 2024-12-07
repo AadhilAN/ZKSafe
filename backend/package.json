@@ -1,11 +1,32 @@
 {
   "name": "fyp",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
+    "start": "node ./index.js",
+    "dev": "nodemon ./index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "ethereumjs-tx": "^2.1.2",
+    "ethers": "^6.13.4",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.4",
+    "path": "^0.12.7",
+    "web3": "^4.15.0"
+  },
+  "keywords": [],
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.7"
+  }
 }
