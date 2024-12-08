@@ -1,7 +1,10 @@
+const fs = require('fs');
+const path = require('path');
 const User = require('../models/userModel');
 const bcrypt = require('bcryptjs');
 const { ethers } = require('ethers');
 const { generateToken } = require('../Services/userService');
+const { encryptContent } = require('../utils/encryption');
 
 // Register User
 exports.register = async (req, res) => {
@@ -18,15 +21,34 @@ exports.register = async (req, res) => {
         const privateKey = wallet.privateKey;
 
         // Log the private key for testing purposes
-        console.log(`Private Key for user ${email}: ${privateKey}`);
-
+        // console.log(`Private Key for user ${email}: ${privateKey}`);
+        
+        // console.log(`Private key saved to file: ${filePath}`);
+        
         // Create a new user
         const user = new User({ name, email, password, ethereumAddress: publicKey });
         await user.save();
+        
+        const hashedPassword = user.password; // The hashed password from the pre save model
+        // Write private key to a .txt file named by the user's email
+        const fileContent = `Your Ethereum Wallet Details:\n\nPublic Address: ${publicKey}\nPrivate Key: ${privateKey}\n\nKeep this file secure and do not share it with anyone!`;
+        const { iv, encryptedData } = encryptContent(fileContent, hashedPassword);
+        
+        const fileName = `${email}.txt`;
+        const filePath = path.join(__dirname, '../keys', fileName);
+        const encryptedFileContent = `IV: ${iv}\nEncrypted Data: ${encryptedData}`
+
+        // Ensure the "keys" directory exists before writing the file
+        if (!fs.existsSync(path.join(__dirname, '../keys'))) {
+            fs.mkdirSync(path.join(__dirname, '../keys'));
+        }
+
+        fs.writeFileSync(filePath, encryptedFileContent);
+        console.log(`Encrypted private key saved to file: ${filePath}`);
 
         // Generate token
         const token = generateToken(user._id);
-
+        
         // Return user token and Ethereum address
         res.status(201).json({ token, ethereumAddress: publicKey });
     } catch (error) {
