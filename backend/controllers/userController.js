@@ -8,7 +8,14 @@ const { encryptContent } = require('../utils/encryption');
 
 // Register User
 exports.register = async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, password2 } = req.body;
+
+    if (!name || !email || !password || !password2) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+    if (password === password2) {
+        return res.status(400).json({ message: "Password and Password2 should not be the same" });
+    }
 
     try {
         // Check if user already exists
@@ -17,26 +24,25 @@ exports.register = async (req, res) => {
 
         // Generate Ethereum Wallet
         const wallet = ethers.Wallet.createRandom();
-        const publicKey = wallet.address;
+        const walletAddress = wallet.address;
         const privateKey = wallet.privateKey;
 
-        // Log the private key for testing purposes
-        // console.log(`Private Key for user ${email}: ${privateKey}`);
-        
-        // console.log(`Private key saved to file: ${filePath}`);
+        console.log("Private Key: ", privateKey);
+        console.log("public Key: ", walletAddress);
         
         // Create a new user
-        const user = new User({ name, email, password, ethereumAddress: publicKey });
+        const user = new User({ name, email, password, password2, ethereumAddress: walletAddress });
         await user.save();
         
-        const hashedPassword = user.password; // The hashed password from the pre save model
+        const hashedPassword = user.password; // The hashed password from the pre-save model
+        const hashedPassword2 = user.password2; // The hashed password2 from the pre-save model
+
         // Write private key to a .txt file named by the user's email
-        const fileContent = `Your Ethereum Wallet Details:\n\nPublic Address: ${publicKey}\nPrivate Key: ${privateKey}\n\nKeep this file secure and do not share it with anyone!`;
-        const { iv, encryptedData } = encryptContent(fileContent, hashedPassword);
-        
-        const fileName = `${email}.txt`;
-        const filePath = path.join(__dirname, '../keys', fileName);
-        const encryptedFileContent = `IV: ${iv}\nEncrypted Data: ${encryptedData}`
+        const fileContent = `Your Ethereum Wallet Details:\n\nPublic Address: ${walletAddress}\nPrivate Key: ${privateKey}\n\nKeep this file secure and do not share it with anyone!`;
+        const { iv: txtIv, encryptedData: txtEncryptedData } = encryptContent(fileContent, hashedPassword);
+
+        const filePath = path.join(__dirname, '../keys', `${email}.txt`);
+        const encryptedFileContent = `IV: ${txtIv}\nEncrypted Data: ${txtEncryptedData}`;
 
         // Ensure the "keys" directory exists before writing the file
         if (!fs.existsSync(path.join(__dirname, '../keys'))) {
@@ -46,11 +52,31 @@ exports.register = async (req, res) => {
         fs.writeFileSync(filePath, encryptedFileContent);
         console.log(`Encrypted private key saved to file: ${filePath}`);
 
+        // Create and encrypt the input.json file
+        const inputContent = {
+            privateKey,
+            walletAddress
+        };
+        const inputPath = path.join(__dirname, '../inputs', `${email}_input.json`);
+        const inputJson = JSON.stringify(inputContent, null, 2);
+
+        // const { iv: inputIv, encryptedData: inputEncryptedData } = encryptContent(inputJson, hashedPassword2);
+        // const encryptedInputContent = `IV: ${inputIv}\nEncrypted Data: ${inputEncryptedData}`;
+
+        // Ensure the "inputs" directory exists before writing the file
+        if (!fs.existsSync(path.join(__dirname, '../inputs'))) {
+            fs.mkdirSync(path.join(__dirname, '../inputs'));
+        }
+
+        // fs.writeFileSync(inputPath, encryptedInputContent);
+        fs.writeFileSync(inputPath, inputJson);
+        console.log(`Encrypted input file created at: ${inputPath}`);
+
         // Generate token
         const token = generateToken(user._id);
         
         // Return user token and Ethereum address
-        res.status(201).json({ token, ethereumAddress: publicKey });
+        res.status(201).json({ token, ethereumAddress: walletAddress });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

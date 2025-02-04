@@ -3,6 +3,7 @@ const path = require('path');
 const User = require('../models/userModel');
 const { decryptContent } = require('../utils/encryption');
 const { JsonRpcProvider, formatEther, parseEther, Wallet } = require('ethers');
+const { hash } = require('bcryptjs');
 
 const provider = new JsonRpcProvider('https://sepolia.infura.io/v3/151e8b37d18b4b8ebbadc74f189ddf2e');
 
@@ -71,7 +72,7 @@ const getBalance = async (email) => {
 // Transfer Ether
 const transferEther = async (email, to, amount) => {
     try {
-        const privateKey = getPrivateKeyFromFile(email); // Read private key from file
+        const privateKey = await getPrivateKeyFromFile(email); // Read private key from file
         const wallet = new Wallet(privateKey, provider);
 
         const transaction = {

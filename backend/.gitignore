@@ -1,3 +1,6 @@
 .env
 node_modules
 keys
+../ZKP/
+../ZKP/compiled
+../ZKP/compiled/powersOfTau28_hez_final_20.ptau
