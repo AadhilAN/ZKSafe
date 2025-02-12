@@ -6,7 +6,7 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     password2: { type: String, required: true },
-    ethereumAddress: { type: String, required: true },
+    walletId: { type: mongoose.Schema.Types.ObjectId, ref: "Wallet", required: false },
     createdAt: { type: Date, default: Date.now },
 });
 

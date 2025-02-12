@@ -1,10 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const circomlibjs = require("circomlibjs");
 const User = require('../models/userModel');
+const Wallet = require('../models/walletModel');
 const bcrypt = require('bcryptjs');
 const { ethers } = require('ethers');
 const { generateToken } = require('../Services/userService');
 const { encryptContent } = require('../utils/encryption');
+const { verifyProof } = require('../Services/zkpService'); // Import zk-SNARK proof verification
 
 // Register User
 exports.register = async (req, res) => {
@@ -28,31 +31,28 @@ exports.register = async (req, res) => {
         const privateKey = wallet.privateKey;
 
         console.log("Private Key: ", privateKey);
-        console.log("public Key: ", walletAddress);
+        console.log("Public Key: ", walletAddress);
         
         // Create a new user
         const user = new User({ name, email, password, password2, ethereumAddress: walletAddress });
         await user.save();
         
-        const hashedPassword = user.password; // The hashed password from the pre-save model
-        const hashedPassword2 = user.password2; // The hashed password2 from the pre-save model
+        const hashedPassword = user.password;
+        const hashedPassword2 = user.password2;
 
-        // Write private key to a .txt file named by the user's email
+        // Write private key to an encrypted file
         const fileContent = `Your Ethereum Wallet Details:\n\nPublic Address: ${walletAddress}\nPrivate Key: ${privateKey}\n\nKeep this file secure and do not share it with anyone!`;
         const { iv: txtIv, encryptedData: txtEncryptedData } = encryptContent(fileContent, hashedPassword);
-
         const filePath = path.join(__dirname, '../keys', `${email}.txt`);
         const encryptedFileContent = `IV: ${txtIv}\nEncrypted Data: ${txtEncryptedData}`;
 
-        // Ensure the "keys" directory exists before writing the file
         if (!fs.existsSync(path.join(__dirname, '../keys'))) {
             fs.mkdirSync(path.join(__dirname, '../keys'));
         }
-
         fs.writeFileSync(filePath, encryptedFileContent);
         console.log(`Encrypted private key saved to file: ${filePath}`);
 
-        // Create and encrypt the input.json file
+        // Create and store the input.json file
         const inputContent = {
             privateKey,
             walletAddress
@@ -60,17 +60,21 @@ exports.register = async (req, res) => {
         const inputPath = path.join(__dirname, '../inputs', `${email}_input.json`);
         const inputJson = JSON.stringify(inputContent, null, 2);
 
-        // const { iv: inputIv, encryptedData: inputEncryptedData } = encryptContent(inputJson, hashedPassword2);
-        // const encryptedInputContent = `IV: ${inputIv}\nEncrypted Data: ${inputEncryptedData}`;
-
-        // Ensure the "inputs" directory exists before writing the file
         if (!fs.existsSync(path.join(__dirname, '../inputs'))) {
             fs.mkdirSync(path.join(__dirname, '../inputs'));
         }
-
-        // fs.writeFileSync(inputPath, encryptedInputContent);
         fs.writeFileSync(inputPath, inputJson);
-        console.log(`Encrypted input file created at: ${inputPath}`);
+        console.log(`Input file created at: ${inputPath}`);
+
+        // const newWallet = new Wallet({
+        //     userId: user._id,
+        //     publicKey: walletAddress,
+        //     encryptedFilePath: filePath
+        // });
+        // await newWallet.save();
+
+        // user.walletId = newWallet._id;
+        // await user.save();
 
         // Generate token
         const token = generateToken(user._id);
@@ -82,20 +86,44 @@ exports.register = async (req, res) => {
     }
 };
 
-// Login User
+// Login User with zk-SNARK Proof Verification
 exports.login = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, password2, proof, publicSignals } = req.body;
 
     try {
+        // Find user in database
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
+        // Verify both passwords
+        const isMatch1 = await bcrypt.compare(password, user.password);
+        const isMatch2 = await bcrypt.compare(password2, user.password2);
+        
+        if (!isMatch1 || !isMatch2) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
 
+        // Retrieve wallet address from user data
+        const storedWalletAddress = user.ethereumAddress;
+        const poseidon = await circomlibjs.buildPoseidon();
+        const walletHash = poseidon.F.toString(poseidon([storedWalletAddress]));
+
+        console.log("storedWalletAddress: ", storedWalletAddress);
+        console.log("walletHash: ", walletHash);
+        console.log("publicSignals", publicSignals);
+
+        // Validate proof
+        const proofValidation = await verifyProof(proof, [publicSignals]);
+        if (proofValidation !== "Proof is valid") {
+            return res.status(400).json({ message: "Invalid proof, login denied" });
+        }
+
+        // Generate JWT Token
         const token = generateToken(user._id);
-        res.status(200).json({ token });
+
+        return res.status(200).json({ message: "Login successful", token });
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Login error:", error);
+        return res.status(500).json({ message: "Server error", details: error.message });
     }
 };
