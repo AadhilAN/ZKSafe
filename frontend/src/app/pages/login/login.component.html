@@ -1,10 +1,34 @@
 <div class="login-container">
-    <h2>Login</h2>
-    <form (submit)="login()">
-      <input type="email" placeholder="Email" [(ngModel)]="user.email" name="email" required>
-      <input type="password" placeholder="Password" [(ngModel)]="user.password" name="password" required>
-      <input type="password" placeholder="Password2" [(ngModel)]="user.password2" name="password2" required>
-      <button type="submit">Login</button>
-    </form>
+  <h2>Login</h2>
+  <form (submit)="login()">
+    <!-- Email Input -->
+    <input type="email" placeholder="Email" [(ngModel)]="user.email" name="email" required>
+
+    <!-- Password Fields -->
+    <input type="password" placeholder="Password" [(ngModel)]="user.password" name="password" required>
+    <input type="password" placeholder="Confirm Password" [(ngModel)]="user.password2" name="password2" required>
+
+    <!-- Key File Upload -->
+    <div class="file-upload-wrapper">
+      <!-- Hidden file input -->
+      <input type="file" 
+             (change)="onFileSelected($event)"
+             accept=".json"
+             id="keyFileInput"
+             hidden
+             #fileInput>
+      
+      <!-- Visible button -->
+      <label for="keyFileInput" class="upload-button">
+        <span>📁 Upload Key File</span>
+      </label>
+      
+      <!-- Selected file name -->
+      <span class="file-name">{{ uploadedFileName || 'No file selected' }}</span>
+    </div>
+
+    <button type="submit" class="submit-button" [disabled]="loading">
+      {{ loading ? 'Authenticating...' : 'Login' }}
+    </button>
+  </form>
 </div>
-  

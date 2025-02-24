@@ -36,7 +36,7 @@ export class DashboardComponent implements OnInit {
 
   // Fetch wallet balance
   getBalance() {
-    this.http.get<any>(`http://localhost:5010/api/wallet/balance?address=${this.walletAddress}`)
+    this.http.get<any>(`http://localhost:5010/api/wallet/balance?email=${localStorage.getItem('email')}`)
       .subscribe({
         next: (response) => {
           this.balance = response.balance;

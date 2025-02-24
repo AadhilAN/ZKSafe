@@ -1,11 +1,11 @@
 <div class="register-container">
-    <h2>Register</h2>
-    <form (submit)="register()">
-      <input type="text" placeholder="Name" [(ngModel)]="user.name" required>
-      <input type="email" placeholder="Email" [(ngModel)]="user.email" required>
-      <input type="password" placeholder="Password" [(ngModel)]="user.password" required>
-      <input type="password" placeholder="Confirm Password" [(ngModel)]="user.password2" required>
-      <button type="submit">Register</button>
-    </form>
-  </div>
-  
+  <h2>Register</h2>
+  <form (submit)="register()">
+    <!-- Add name attributes to all inputs -->
+    <input type="text" placeholder="Name" [(ngModel)]="user.name" name="name" required>
+    <input type="email" placeholder="Email" [(ngModel)]="user.email" name="email" required>
+    <input type="password" placeholder="Password" [(ngModel)]="user.password" name="password" required>
+    <input type="password" placeholder="Password 2" [(ngModel)]="user.password2" name="password2" required>
+    <button type="submit">Register</button>
+  </form>
+</div>
