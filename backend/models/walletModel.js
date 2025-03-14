@@ -1,9 +1,9 @@
 const mongoose = require("mongoose");
 
 const WalletSchema = new mongoose.Schema({
-    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     publicKey: { type: String, required: true },
-    encryptedFilePath: { type: String, required: true},
+    walletAddress: { type: String, required: true },
+    encryptedFilePath: { type: String, required: false},
     createdAt: { type: Date, default: Date.now }
 });
 

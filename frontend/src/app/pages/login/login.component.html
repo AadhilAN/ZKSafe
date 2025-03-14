@@ -1,34 +1,56 @@
-<div class="login-container">
-  <h2>Login</h2>
-  <form (submit)="login()">
-    <!-- Email Input -->
-    <input type="email" placeholder="Email" [(ngModel)]="user.email" name="email" required>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen p-5">
+  <div class="bg-white rounded-lg shadow-md w-full max-w-md p-10">
+    <h2 class="text-gray-800 text-2xl mb-6 text-center font-semibold">Login</h2>
+    <form (submit)="login()">
+      <!-- Email Input -->
+      <div class="mb-5">
+        <label for="email" class="block mb-1 text-gray-700 font-medium">Email</label>
+        <input type="email" id="email" placeholder="Email" [(ngModel)]="user.email" name="email" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
 
-    <!-- Password Fields -->
-    <input type="password" placeholder="Password" [(ngModel)]="user.password" name="password" required>
-    <input type="password" placeholder="Confirm Password" [(ngModel)]="user.password2" name="password2" required>
-
-    <!-- Key File Upload -->
-    <div class="file-upload-wrapper">
-      <!-- Hidden file input -->
-      <input type="file" 
-             (change)="onFileSelected($event)"
-             accept=".json"
-             id="keyFileInput"
-             hidden
-             #fileInput>
+      <!-- Password Fields -->
+      <div class="mb-5">
+        <label for="password" class="block mb-1 text-gray-700 font-medium">Password</label>
+        <input type="password" id="password" placeholder="Password" [(ngModel)]="user.password" name="password" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
       
-      <!-- Visible button -->
-      <label for="keyFileInput" class="upload-button">
-        <span>📁 Upload Key File</span>
-      </label>
-      
-      <!-- Selected file name -->
-      <span class="file-name">{{ uploadedFileName || 'No file selected' }}</span>
-    </div>
+      <div class="mb-5">
+        <label for="password2" class="block mb-1 text-gray-700 font-medium">Confirm Password</label>
+        <input type="password" id="password2" placeholder="Confirm Password" [(ngModel)]="user.password2" name="password2" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
 
-    <button type="submit" class="submit-button" [disabled]="loading">
-      {{ loading ? 'Authenticating...' : 'Login' }}
-    </button>
-  </form>
-</div>
+      <!-- Key File Upload -->
+      <div class="mb-5">
+        <label class="block mb-1 text-gray-700 font-medium">Upload Key File</label>
+        <div class="flex items-center">
+          <input type="file" 
+                 (change)="onFileSelected($event)"
+                 accept=".json"
+                 id="keyFileInput"
+                 hidden
+                 #fileInput>
+          <label for="keyFileInput" class="cursor-pointer bg-gray-800 text-white rounded-md py-2 px-4 hover:bg-blue-500 transition duration-200">
+            <span>📁 Upload Key File</span>
+          </label>
+          <span class="ml-3 text-gray-600">{{ uploadedFileName || 'No file selected' }}</span>
+        </div>
+      </div>
+
+      <button type="submit" class="bg-gray-800 text-white rounded-md py-3 font-semibold w-full hover:bg-blue-500 transition duration-200" [disabled]="loading">
+        {{ loading ? 'Authenticating...' : 'Login' }}
+      </button>
+      <div class="mt-5 text-center text-gray-600 text-sm">
+        Don't have an account? <a href="/register" class="text-blue-600 hover:underline">Sign up</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

@@ -6,7 +6,12 @@ const UserSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     password2: { type: String, required: true },
-    ethereumAddress: { type: String, required: true },
+    usernameHash: { type: String, required: true },
+    saltCommitment: { type: String, required: true },
+    identityCommitment: { type: String, required: true },   
+    deviceCommitment: { type: String, required: true },
+    lastAuthTimestamp: { type: Date, required: true },
+    walletID: { type: mongoose.Schema.Types.ObjectId,ref: "Wallet", required: true },
     createdAt: { type: Date, default: Date.now },
 });
 

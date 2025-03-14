@@ -1,7 +1,10 @@
 const express = require('express');
-const { getWalletBalance, sendEther } = require('../controllers/walletController');
+const { getWalletBalance, sendEther, getWalletAddress } = require('../controllers/walletController');
 const { authenticate } = require('../middlewares/authMiddleware');
 const router = express.Router();
+
+// Route to get wallet balance
+router.get('/details', authenticate, getWalletAddress);
 
 // Route to get wallet balance
 router.get('/balance', authenticate, getWalletBalance);

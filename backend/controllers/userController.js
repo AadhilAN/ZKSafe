@@ -1,5 +1,6 @@
 const circomlibjs = require("circomlibjs");
 const User = require('../models/userModel');
+const Wallet = require('../models/walletModel');
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../Services/userService');
 const { encryptContent } = require('../utils/encryption');
@@ -7,9 +8,10 @@ const { verifyProof } = require('../Services/zkpService'); // Import zk-SNARK pr
 
 // Register User
 exports.register = async (req, res) => {
-    const { name, email, password, password2, walletAddress } = req.body;
+    const { name, email, password, password2, walletAddress, publicKey, usernameHash, saltCommitment, identityCommitment, deviceCommitment, lastAuthTimestamp} = req.body;
+    console.log("Registering user with data: ", req.body);
 
-    if (!name || !email || !password || !password2 || !walletAddress) {
+    if (!name || !email || !password || !password2 || !walletAddress || !publicKey || !usernameHash || !saltCommitment || !identityCommitment || !deviceCommitment || !lastAuthTimestamp) {
         return res.status(400).json({ message: "All fields are required" });
     }
     if (password === password2) {
@@ -29,8 +31,12 @@ exports.register = async (req, res) => {
         // console.log("Private Key: ", privateKey);
         // console.log("Public Key: ", walletAddress);
         
+        // Create new Wallet
+        const wallet = new Wallet({ publicKey, walletAddress });
+        await wallet.save();
+
         // Create a new user
-        const user = new User({ name, email, password, password2, ethereumAddress: walletAddress });
+        const user = new User({ name, email, password, password2, walletID: wallet._id, usernameHash, saltCommitment, identityCommitment, deviceCommitment, lastAuthTimestamp });
         await user.save();
         
         // const hashedPassword = user.password;
@@ -101,14 +107,14 @@ exports.login = async (req, res) => {
         }
 
         // Retrieve wallet address from user data
-        const storedWalletAddress = user.ethereumAddress;
-        const poseidon = await circomlibjs.buildPoseidon();
-        const walletHash = poseidon.F.toString(poseidon([storedWalletAddress]));
+        // const storedWalletAddress = user.ethereumAddress;
+        // const poseidon = await circomlibjs.buildPoseidon();
+        // const walletHash = poseidon.F.toString(poseidon([storedWalletAddress]));
 
-        console.log("storedWalletAddress: ", storedWalletAddress);
-        console.log("walletHash: ", walletHash);
+        // console.log("storedWalletAddress: ", storedWalletAddress);
+        // console.log("walletHash: ", walletHash);
         console.log("publicSignals", publicSignal);
-        console.log("proof", proof);
+        console.log("proof sent by client", proof);
 
         // Validate proof
         const proofValidation = await verifyProof(proof, publicSignal);

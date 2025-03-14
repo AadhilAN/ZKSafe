@@ -21,8 +21,9 @@ export class DashboardComponent implements OnInit {
   // Fetch user wallet details (walletAddress)
   getWalletDetails() {
     const token = localStorage.getItem('token');
+    console.log(token);
     this.http.get<any>('http://localhost:5010/api/wallet/details', {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `${token}` }
     }).subscribe({
       next: (data) => {
         this.walletAddress = data.walletAddress;
@@ -36,7 +37,10 @@ export class DashboardComponent implements OnInit {
 
   // Fetch wallet balance
   getBalance() {
-    this.http.get<any>(`http://localhost:5010/api/wallet/balance?email=${localStorage.getItem('email')}`)
+    const token = localStorage.getItem('token');
+    this.http.get<any>(`http://localhost:5010/api/wallet/balance`, {
+      headers: { Authorization: `${token}` }
+    })
       .subscribe({
         next: (response) => {
           this.balance = response.balance;
@@ -59,7 +63,7 @@ export class DashboardComponent implements OnInit {
       recipient: this.recipientAddress,
       amount: this.amount
     }, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `${token}` }
     }).subscribe({
       next: (response) => {
         alert("Transfer successful!");

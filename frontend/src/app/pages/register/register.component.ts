@@ -1,6 +1,9 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
+import * as sss from 'shamirs-secret-sharing'; // Install with: npm install shamirs-secret-sharing
+import { Buffer } from 'buffer';
+import { last } from 'rxjs';
 
 @Component({
   selector: 'app-register',
@@ -28,7 +31,7 @@ export class RegisterComponent {
     }
 
     // Corrected password matching validation
-    if (this.user.password == this.user.password2) {
+    if (this.user.password === this.user.password2) {
       alert('Passwords should not match.');
       return;
     }
@@ -36,25 +39,64 @@ export class RegisterComponent {
     this.loading = true;
     
     try {
-      // 1. Generate Ethereum Wallet (now includes publicKey)
+      // 1. Generate Ethereum Wallet
       const wallet = await this.generateWallet();
 
-      // 2. Send registration data to server
+      // 2. Generate ZKP-specific elements
+      const userSalt = await this.generateRandomFieldElement();
+      const deviceId = await this.getDeviceFingerprint();
+
+      // 4. Encrypt the private key using the password
+      const encryptedPrivateKey = await this.encryptPrivateKey(wallet.privateKey, this.user.password);
+      
+      // 5. Split the encrypted private key into 5 shares with threshold 4
+      const shares = await this.splitSecret(encryptedPrivateKey, 5, 4);
+      
+      // Convert Buffer shares to Base64 strings for JSON storage
+      const sharesBase64 = shares.map(share => Buffer.from(share).toString('base64'));
+
+      const crypto = await import('crypto-js');
+      const userShard = crypto.AES.decrypt(sharesBase64[0], this.user.password);
+      
+      // 3. Generate ZKP identity commitments
+      const usernameHash = await this.hashValue(this.user.name);
+      const saltCommitment = await this.hashValue(this.user.name + userSalt);
+      const identityCommitment = await this.hashValue(sharesBase64[0] + userSalt);
+      const deviceCommitment = await this.hashValue(identityCommitment + deviceId);
+      
+      // 6. Send registration data to server
       const registrationData = {
         name: this.user.name,
         email: this.user.email,
         password: this.user.password,
         password2: this.user.password2,
-        walletAddress: wallet.address
+        walletAddress: wallet.address,
+        publicKey: wallet.publicKey,
+        // ZKP-specific data
+        usernameHash: usernameHash,
+        saltCommitment: saltCommitment,
+        identityCommitment: identityCommitment,
+        deviceCommitment: deviceCommitment,
+        lastAuthTimestamp: new Date().toISOString().replace('Z', '+00:00')
+        //maxAuthLevel: 10 // Default max auth level
       };
 
-      await this.http.post('http://localhost:5010/api/auth/register', registrationData)
+      console.log("Registration data:", registrationData);
+
+      this.http.post('http://localhost:5010/api/auth/register', registrationData)
         .subscribe({
           next: async (response) => {
-            // 3. Create and download JSON file
+            // 7. Create and download JSON file with shares and ZKP inputs
             const jsonContent = JSON.stringify({
+              //shares from index 1 to 4
+              shares: sharesBase64.slice(1),
+              walletAddress: wallet.address,
+              threshold: 4,
+              totalShares: 5,
+              // ZKP input data for login
               privateKey: wallet.privateKey,
-              walletAddress: wallet.address
+              userSalt: userSalt,
+              deviceId: deviceId
             }, null, 2);
 
             const blob = new Blob([jsonContent], { type: 'application/json' });
@@ -63,7 +105,7 @@ export class RegisterComponent {
             // Create download link and trigger click
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'input.json';
+            a.download = 'wallet-zkp-shares.json';
             document.body.appendChild(a);
             a.click();
             
@@ -73,14 +115,14 @@ export class RegisterComponent {
               window.URL.revokeObjectURL(url);
             }, 0);
 
-            // 4. Show success message
-            alert('Registration successful! Your keys have been downloaded as input.json. Please save it securely.');
+            alert('Registration successful! Your wallet information has been split into 5 shares (threshold: 4) and downloaded as wallet-zkp-shares.json. Please store this file securely.');
 
-            // 5. Redirect to login
+            localStorage.setItem('userShard', userShard.toString());
+            // Redirect to login
             this.router.navigate(['/login']);
           },
           error: (err) => {
-            alert('Error: ' + err.error.message);
+            alert('Error: ' + (err.error?.message || 'Registration failed'));
           }
         });
 
@@ -92,6 +134,33 @@ export class RegisterComponent {
     }
   }
 
+  // Generate a random field element for ZKP using browser's crypto API
+  private async generateRandomFieldElement(): Promise<string> {
+    const array = new Uint8Array(31); // 31 bytes to ensure it's smaller than field size
+    window.crypto.getRandomValues(array);
+    return '0x' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  // Get device fingerprint using browser information
+  private async getDeviceFingerprint(): Promise<string> {
+    const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const language = navigator.language;
+    const userAgent = navigator.userAgent;
+    
+    return await this.hashValue(screenInfo + timeZone + language + userAgent);
+  }
+
+  // Hash a value using browser's native crypto API
+  private async hashValue(value: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(value);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return '0x' + hashHex;
+  }
+
   private async generateWallet() {
     const ethers = await import('ethers');
     const wallet = ethers.Wallet.createRandom();
@@ -100,5 +169,57 @@ export class RegisterComponent {
       publicKey: wallet.publicKey,
       address: wallet.address
     };
+  }
+
+  private async encryptPrivateKey(privateKey: string, password: string): Promise<string> {
+    const ethers = await import('ethers');
+    const wallet = new ethers.Wallet(privateKey);
+    
+    // Encrypt the wallet using the password
+    const encryptedWallet = await wallet.encrypt(password);
+    
+    return encryptedWallet;
+  }
+
+  private async splitSecret(secret: string, numShares: number, threshold: number): Promise<Uint8Array[]> {
+    // Convert the string to Buffer
+    const secretBuffer = Buffer.from(secret, 'utf8');
+    
+    // Generate the shares
+    const shares = sss.split(secretBuffer, { shares: numShares, threshold: threshold });
+    
+    return shares;
+  }
+
+  private async combineShares(shares: Uint8Array[]): Promise<string> {
+    // Combine the shares to reconstruct the secret
+    const recoveredBuffer = sss.combine(shares);
+    
+    // Convert Buffer back to string
+    return recoveredBuffer.toString('utf8');
+  }
+
+  // Method to reconstruct and decrypt private key
+  public async reconstructAndDecryptPrivateKey(sharesBase64: string[], password: string): Promise<string> {
+    // Ensure we have at least 4 shares
+    if (sharesBase64.length < 4) {
+      throw new Error('At least 4 shares are required to reconstruct the private key');
+    }
+    try {
+      // Convert base64 shares back to Uint8Array
+      const shares = sharesBase64.map(share => Buffer.from(share, 'base64'));
+      
+      // Combine shares to get the encrypted wallet JSON
+      const encryptedJson = await this.combineShares(shares);
+      
+      // Decrypt the wallet using the password
+      const ethers = await import('ethers');
+      const wallet = await ethers.Wallet.fromEncryptedJson(encryptedJson, password);
+      
+      return wallet.privateKey;
+    } catch (error) {
+      console.error('Error reconstructing or decrypting private key:', error);
+      throw new Error('Failed to reconstruct or decrypt private key');
+    }
   }
 }

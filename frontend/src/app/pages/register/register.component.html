@@ -1,11 +1,41 @@
-<div class="register-container">
-  <h2>Register</h2>
-  <form (submit)="register()">
-    <!-- Add name attributes to all inputs -->
-    <input type="text" placeholder="Name" [(ngModel)]="user.name" name="name" required>
-    <input type="email" placeholder="Email" [(ngModel)]="user.email" name="email" required>
-    <input type="password" placeholder="Password" [(ngModel)]="user.password" name="password" required>
-    <input type="password" placeholder="Password 2" [(ngModel)]="user.password2" name="password2" required>
-    <button type="submit">Register</button>
-  </form>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Registration</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen p-5">
+  <div class="bg-white rounded-lg shadow-md w-full max-w-md p-10">
+    <h2 class="text-gray-800 text-2xl mb-6 text-center font-semibold">Create Your Account</h2>
+    <form (submit)="register()">
+      <div class="mb-5">
+        <label for="name" class="block mb-1 text-gray-700 font-medium">Full Name</label>
+        <input type="text" id="name" placeholder="Enter your name" [(ngModel)]="user.name" name="name" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+      
+      <div class="mb-5">
+        <label for="email" class="block mb-1 text-gray-700 font-medium">Email Address</label>
+        <input type="email" id="email" placeholder="Enter your email" [(ngModel)]="user.email" name="email" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+      
+      <div class="mb-5">
+        <label for="password" class="block mb-1 text-gray-700 font-medium">Password</label>
+        <input type="password" id="password" placeholder="Create a password" [(ngModel)]="user.password" name="password" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+      
+      <div class="mb-5">
+        <label for="password2" class="block mb-1 text-gray-700 font-medium">Confirm Password</label>
+        <input type="password" id="password2" placeholder="Confirm your password" [(ngModel)]="user.password2" name="password2" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+      </div>
+      
+      <button type="submit" class="bg-gray-800 text-white rounded-md py-3 font-semibold w-full hover:bg-blue-500 transition duration-200">Create Account</button>
+      
+      <div class="mt-5 text-center text-gray-600 text-sm">
+        Already have an account? <a href="#" class="text-blue-600 hover:underline">Sign in</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
