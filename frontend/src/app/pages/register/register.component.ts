@@ -56,7 +56,7 @@ export class RegisterComponent {
       const sharesBase64 = shares.map(share => Buffer.from(share).toString('base64'));
 
       const crypto = await import('crypto-js');
-      const userShard = crypto.AES.decrypt(sharesBase64[0], this.user.password);
+      const userShard = crypto.AES.encrypt(sharesBase64[0], this.user.password);
       
       // 3. Generate ZKP identity commitments
       const usernameHash = await this.hashValue(this.user.name);
