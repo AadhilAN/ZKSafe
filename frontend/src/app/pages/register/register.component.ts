@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
-import * as sss from 'shamirs-secret-sharing'; // Install with: npm install shamirs-secret-sharing
+import * as sss from 'shamirs-secret-sharing';
 import { Buffer } from 'buffer';
 import { last } from 'rxjs';
+import { getDeviceFingerprint, hashValue } from '../../shared/utils/crypto-utils';
 
 @Component({
   selector: 'app-register',
@@ -44,7 +45,7 @@ export class RegisterComponent {
 
       // 2. Generate ZKP-specific elements
       const userSalt = await this.generateRandomFieldElement();
-      const deviceId = await this.getDeviceFingerprint();
+      const deviceId = await getDeviceFingerprint();
 
       // 4. Encrypt the private key using the password
       const encryptedPrivateKey = await this.encryptPrivateKey(wallet.privateKey, this.user.password);
@@ -59,10 +60,10 @@ export class RegisterComponent {
       const userShard = crypto.AES.encrypt(sharesBase64[0], this.user.password);
       
       // 3. Generate ZKP identity commitments
-      const usernameHash = await this.hashValue(this.user.name);
-      const saltCommitment = await this.hashValue(this.user.name + userSalt);
-      const identityCommitment = await this.hashValue(sharesBase64[0] + userSalt);
-      const deviceCommitment = await this.hashValue(identityCommitment + deviceId);
+      const usernameHash = await hashValue(this.user.name);
+      const saltCommitment = await hashValue(this.user.name + userSalt);
+      const identityCommitment = await hashValue(sharesBase64[0] + userSalt);
+      const deviceCommitment = await hashValue(identityCommitment + deviceId);
       
       // 6. Send registration data to server
       const registrationData = {
@@ -141,25 +142,25 @@ export class RegisterComponent {
     return '0x' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
   }
 
-  // Get device fingerprint using browser information
-  private async getDeviceFingerprint(): Promise<string> {
-    const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const language = navigator.language;
-    const userAgent = navigator.userAgent;
+  // // Get device fingerprint using browser information
+  // private async getDeviceFingerprint(): Promise<string> {
+  //   const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
+  //   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  //   const language = navigator.language;
+  //   const userAgent = navigator.userAgent;
     
-    return await this.hashValue(screenInfo + timeZone + language + userAgent);
-  }
+  //   return await this.hashValue(screenInfo + timeZone + language + userAgent);
+  // }
 
-  // Hash a value using browser's native crypto API
-  private async hashValue(value: string): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(value);
-    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    return '0x' + hashHex;
-  }
+  // // Hash a value using browser's native crypto API
+  // private async hashValue(value: string): Promise<string> {
+  //   const encoder = new TextEncoder();
+  //   const data = encoder.encode(value);
+  //   const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
+  //   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  //   return '0x' + hashHex;
+  // }
 
   private async generateWallet() {
     const ethers = await import('ethers');
