@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import * as sss from 'shamirs-secret-sharing';
 import { Buffer } from 'buffer';
 import { last } from 'rxjs';
-import { getDeviceFingerprint, hashValue } from '../../shared/utils/crypto-utils';
+import { getDeviceFingerprint, hashValue, poseidonHash } from '../../shared/utils/crypto-utils';
 
 @Component({
   selector: 'app-register',
@@ -60,11 +60,16 @@ export class RegisterComponent {
       const userShard = crypto.AES.encrypt(sharesBase64[0], this.user.password);
       
       // 3. Generate ZKP identity commitments
-      const usernameHash = await hashValue(this.user.name);
-      const saltCommitment = await hashValue(this.user.name + userSalt);
-      const identityCommitment = await hashValue(sharesBase64[0] + userSalt);
-      const deviceCommitment = await hashValue(identityCommitment + deviceId);
+      const usernameHash = await poseidonHash([this.user.name]);
+      const saltCommitment = await poseidonHash([this.user.name, userSalt]);
+      const identityCommitment = await poseidonHash([sharesBase64[0], userSalt]);
+      const deviceCommitment = await poseidonHash([identityCommitment, deviceId]);
       
+      console.log("Username hash:", usernameHash);
+      console.log("Salt commitment:", saltCommitment);
+      console.log("Identity commitment:", identityCommitment);
+      console.log("Device commitment:", deviceCommitment);
+
       // 6. Send registration data to server
       const registrationData = {
         name: this.user.name,
