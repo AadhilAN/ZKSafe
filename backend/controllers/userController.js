@@ -6,88 +6,54 @@ const { generateToken } = require('../Services/userService');
 const { encryptContent } = require('../utils/encryption');
 const { verifyProof } = require('../Services/zkpService');
 
-// // Utility function to generate challenge and expected response
-// async function generateChallenge(identityCommitment) {
-//   try {
-//     // Generate a random challenge value (32 bytes converted to hex)
-//     const challengeBuffer = Buffer.from(Array(32).fill().map(() => Math.floor(Math.random() * 256)));
-//     const challengeValue = "0x" + challengeBuffer.toString('hex');
-    
-//     // Get current timestamp (in seconds)
-//     const currentTimestamp = Math.floor(Date.now() / 1000);
-    
-//     // Calculate expected response using Poseidon(identityCommitment, currentTimestamp, challengeValue)
-//     const poseidon = await circomlibjs.buildPoseidon();
-    
-//     // Convert inputs to field elements
-//     const identityCommitmentBigInt = BigInt(identityCommitment);
-//     const currentTimestampBigInt = BigInt(currentTimestamp);
-//     const challengeValueBigInt = BigInt(challengeValue);
-    
-//     // Calculate the hash to get expected response
-//     const expectedResponse = poseidon([
-//       poseidon.F.e(identityCommitmentBigInt),
-//       poseidon.F.e(currentTimestampBigInt),
-//       poseidon.F.e(challengeValueBigInt)
-//     ]);
-    
-//     // Convert to hex string
-//     const expectedResponseHex = "0x" + poseidon.F.toString(expectedResponse);
-    
-//     return {
-//       challengeValue,
-//       expectedChallengeResponse: expectedResponseHex,
-//       currentTimestamp,
-//       // Calculate a reasonable max timestamp (1 hour in the future)
-//       maxTimestamp: currentTimestamp + 3600
-//     };
-//   } catch (error) {
-//     console.error("Error generating challenge:", error);
-//     throw error;
-//   }
-// }
-
-
 // Utility function to generate challenge and expected response
 async function generateChallenge(identityCommitment) {
     try {
-      // Generate a random challenge value (32 bytes converted to hex)
-      const challengeBuffer = Buffer.from(Array(32).fill().map(() => Math.floor(Math.random() * 256)));
-      const challengeValue = "0x" + challengeBuffer.toString('hex');
-      
-      // Get current timestamp (in seconds)
-      const currentTimestamp = Math.floor(Date.now() / 1000);
-      
-      // Calculate expected response using Poseidon(identityCommitment, currentTimestamp, challengeValue)
-      const poseidon = await circomlibjs.buildPoseidon();
-      
-      // Convert inputs to field elements
-      const identityCommitmentBigInt = BigInt(identityCommitment);
-      const currentTimestampBigInt = BigInt(currentTimestamp);
-      const challengeValueBigInt = BigInt(challengeValue);
-      
-      // Calculate the hash to get expected response
-      const expectedResponse = poseidon([
-        poseidon.F.e(identityCommitmentBigInt),
-        poseidon.F.e(currentTimestampBigInt),
-        poseidon.F.e(challengeValueBigInt)
-      ]);
-      
-      // Convert to hex string
-      const expectedResponseHex = "0x" + poseidon.F.toString(expectedResponse);
-      
-      return {
-        challengeValue,
-        expectedChallengeResponse: expectedResponseHex,
-        currentTimestamp,
-        // Calculate a reasonable max timestamp (1 hour in the future)
-        maxTimestamp: currentTimestamp + 3600
-      };
+        // Generate a random challenge value (32 bytes converted to hex)
+        const challengeBuffer = Buffer.from(Array(32).fill().map(() => Math.floor(Math.random() * 256)));
+        const challengeValue = "0x" + challengeBuffer.toString('hex');
+        console.log("Challenge Value: ", challengeValue);
+
+        // Get current timestamp (in seconds)
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        
+        // Calculate expected response using Poseidon(identityCommitment, currentTimestamp, challengeValue)
+        const poseidon = await circomlibjs.buildPoseidon();
+        
+        // Convert inputs to field elements
+        const identityCommitmentBigInt = BigInt(identityCommitment);
+        const currentTimestampBigInt = BigInt(currentTimestamp);
+        const challengeValueBigInt = BigInt(challengeValue);
+
+        console.log("Identity Commitment Bgint: ", identityCommitmentBigInt);
+        console.log("Current Time Bgint: ", currentTimestampBigInt);
+        console.log("Challenge value Bgint: ", challengeValueBigInt);
+        console.log("Identity Commitment FieldE: ", poseidon.F.e(identityCommitmentBigInt));
+        console.log("Current Time FieldE: ", poseidon.F.e(currentTimestampBigInt));
+        console.log("Challenge value FieldE: ", poseidon.F.e(challengeValueBigInt));
+        
+        // Calculate the hash to get expected response
+        const expectedResponse = poseidon([
+            poseidon.F.e(identityCommitmentBigInt),
+            poseidon.F.e(currentTimestampBigInt),
+            poseidon.F.e(challengeValueBigInt)
+        ]);
+        
+        // Convert to hex string
+        const expectedResponseHex = "0x" + poseidon.F.toString(expectedResponse);
+        
+        return {
+            challengeValue,
+            expectedChallengeResponse: expectedResponseHex,
+            currentTimestamp,
+            // Calculate a reasonable max timestamp (1 hour in the future)
+            maxTimestamp: currentTimestamp + 3600
+        };
     } catch (error) {
-      console.error("Error generating challenge:", error);
-      throw error;
+        console.error("Error generating challenge:", error);
+        throw error;
     }
-  }
+}
 
 // Register User
 exports.register = async (req, res) => {
@@ -133,65 +99,19 @@ exports.register = async (req, res) => {
     }
 };
 
-// Challenge generation endpoint - new required endpoint for challenge-response flow
-exports.generateChallenge = async (req, res) => {
-    const { email } = req.body;
-    
-    if (!email) {
-        return res.status(400).json({ message: "Email is required" });
-    }
-    
-    try {
-        // Find user in database
-        const user = await User.findOne({ email });
-        if (!user) return res.status(404).json({ message: 'User not found' });
-        
-        // Generate challenge and expected response
-        const challengeData = await generateChallenge(user.identityCommitment);
-        
-        // Return challenge data to client
-        res.status(200).json({
-            challengeValue: challengeData.challengeValue,
-            currentTimestamp: challengeData.currentTimestamp,
-            maxTimestamp: challengeData.maxTimestamp,
-            // Define the security thresholds as per circuit requirements
-            securityThreshold: 300, // 5 minutes in seconds
-            minSecurityThreshold: 60, // 1 minute in seconds
-            username: user.name, // Send the username for circuit input
-            usernameHash: user.usernameHash,
-            publicIdentityCommitment: user.identityCommitment,
-            registeredSaltCommitment: user.saltCommitment,
-            deviceCommitment: user.deviceCommitment,
-            lastAuthTimestamp: user.lastAuthTimestamp
-        });
-        
-        // Store challenge data in user record or separate collection to verify later
-        user.currentChallenge = {
-            challengeValue: challengeData.challengeValue,
-            expectedChallengeResponse: challengeData.expectedChallengeResponse,
-            timestamp: challengeData.currentTimestamp,
-            expires: challengeData.maxTimestamp
-        };
-        await user.save();
-        
-    } catch (error) {
-        console.error("Challenge generation error:", error);
-        return res.status(500).json({ message: "Server error", details: error.message });
-    }
-};
-
-// Login User with zk-SNARK Proof Verification
-exports.login = async (req, res) => {
-    const { email, password, password2, proof, publicSignals } = req.body;
+// Phase 1: Initiate Login - Verify credentials and generate challenge
+exports.initiateLogin = async (req, res) => {
+    const { email, password, password2 } = req.body;
     
     // Validate required fields
-    if (!email || !password || !password2 || !proof || !publicSignals) {
+    if (!email || !password || !password2) {
         return res.status(400).json({ message: "All fields are required" });
     }
     
     try {
         // Find user in database
         const user = await User.findOne({ email });
+        // console.log(email);
         if (!user) return res.status(404).json({ message: 'User not found' });
         
         // Verify both passwords
@@ -202,6 +122,68 @@ exports.login = async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
         
+        // Generate challenge and expected response
+        const challengeData = await generateChallenge(user.identityCommitment);
+        
+        // Store challenge data in user record
+        user.currentChallenge = {
+            challengeValue: challengeData.challengeValue,
+            expectedChallengeResponse: challengeData.expectedChallengeResponse,
+            timestamp: challengeData.currentTimestamp,
+            expires: challengeData.maxTimestamp
+        };
+        await user.save();
+
+        // IMPORTANT: For the ZK circuit, we need to use the SAME username hash value
+        // that was registered originally, not compute a new one
+        // This ensures consistency with the stored values
+        
+        // Return challenge data and necessary public inputs to client
+        res.status(200).json({
+            // Challenge data
+            challengeValue: challengeData.challengeValue,
+            currentTimestamp: challengeData.currentTimestamp,
+            maxTimestamp: challengeData.maxTimestamp,
+            
+            // Circuit public inputs - use the stored hash values directly
+            usernameHash: user.usernameHash,
+            username: user.name,
+            publicIdentityCommitment: user.identityCommitment,
+            registeredSaltCommitment: user.saltCommitment,
+            deviceCommitment: user.deviceCommitment,
+            lastAuthTimestamp: Math.floor(user.lastAuthTimestamp.getTime() / 1000), // Convert Date to timestamp
+            
+            // Security thresholds
+            securityThreshold: 300, // 5 minutes in seconds
+            minSecurityThreshold: 60, // 1 minute in seconds
+            
+            // Expected response - store this on server but don't send to client in real implementation
+            // Only included here for debugging/development purposes
+            expectedChallengeResponse: challengeData.expectedChallengeResponse
+        });
+        console.log("Username: ", user.name);
+        console.log("Username Hash: ", user.usernameHash);
+        
+    } catch (error) {
+        console.error("Login initiation error:", error);
+        return res.status(500).json({ message: "Server error", details: error.message });
+    }
+};
+
+// Phase 2: Complete Login - Verify proof and issue token
+exports.completeLogin = async (req, res) => {
+    const { email, proof, publicSignals } = req.body;
+    
+    // Validate required fields
+    if (!email || !proof || !publicSignals) {
+        return res.status(400).json({ message: "All fields are required" });
+    }
+    
+    try {
+        // Find user in database
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
         // Check if there's an active challenge
         if (!user.currentChallenge || 
             Math.floor(Date.now() / 1000) > user.currentChallenge.expires) {
@@ -209,7 +191,7 @@ exports.login = async (req, res) => {
         }
         
         // Extract values from publicSignals that will be verified (just isAuthenticated now)
-        const [isAuthenticated] = publicSignals.slice(-1); // Last output
+        const isAuthenticated = publicSignals[publicSignals.length - 1]; // Last output
         
         // Validate proof against the circuit
         const proofValidation = await verifyProof(
@@ -217,12 +199,12 @@ exports.login = async (req, res) => {
             publicSignals, 
             // Additional public inputs needed by the verifier
             {
-                username: user.name,
+                // Use stored values directly
                 usernameHash: user.usernameHash,
                 publicIdentityCommitment: user.identityCommitment,
                 registeredSaltCommitment: user.saltCommitment,
                 deviceCommitment: user.deviceCommitment,
-                lastAuthTimestamp: user.lastAuthTimestamp,
+                lastAuthTimestamp: Math.floor(user.lastAuthTimestamp.getTime() / 1000),
                 currentTimestamp: user.currentChallenge.timestamp,
                 maxTimestamp: user.currentChallenge.expires,
                 challengeValue: user.currentChallenge.challengeValue,
@@ -242,7 +224,7 @@ exports.login = async (req, res) => {
         }
         
         // Update the lastAuthTimestamp
-        user.lastAuthTimestamp = user.currentChallenge.timestamp;
+        user.lastAuthTimestamp = new Date(user.currentChallenge.timestamp * 1000);
         
         // Clear the current challenge
         user.currentChallenge = null;
@@ -258,7 +240,7 @@ exports.login = async (req, res) => {
             email
         });
     } catch (error) {
-        console.error("Login error:", error);
+        console.error("Login completion error:", error);
         return res.status(500).json({ message: "Server error", details: error.message });
     }
 };

@@ -1,12 +1,15 @@
-const poseidonService = require('../Services/poseidonService');
+const { calculateHash } = require('../Services/poseidonService');
 
-/**
- * Controller for calculating Poseidon hash
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- */
 async function calculatePoseidonHash(req, res) {
   try {
+    // Validate request body
+    if (!req.body || !req.body.inputs) {
+      return res.status(400).json({
+        success: false,
+        error: 'Request body must contain "inputs" array'
+      });
+    }
+
     const { inputs } = req.body;
     
     if (!Array.isArray(inputs)) {
@@ -15,8 +18,8 @@ async function calculatePoseidonHash(req, res) {
         error: 'Inputs must be an array'
       });
     }
-    
-    const hashResult = await poseidonService.calculateHash(inputs);
+
+    const hashResult = await calculateHash(inputs);
     
     res.json({
       success: true,
@@ -25,10 +28,11 @@ async function calculatePoseidonHash(req, res) {
   } catch (error) {
     console.error('Error in poseidon controller:', error);
     
-    res.status(500).json({
+    const statusCode = error.message.includes('Unsupported input count') ? 400 : 500;
+    
+    res.status(statusCode).json({
       success: false,
-      error: 'Failed to calculate Poseidon hash',
-      message: error.message
+      error: error.message
     });
   }
 }

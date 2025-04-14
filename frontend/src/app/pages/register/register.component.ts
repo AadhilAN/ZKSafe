@@ -4,7 +4,7 @@ import { Router } from '@angular/router';
 import * as sss from 'shamirs-secret-sharing';
 import { Buffer } from 'buffer';
 import { last } from 'rxjs';
-import { getDeviceFingerprint, hashValue, poseidonHash } from '../../shared/utils/crypto-utils';
+import { getDeviceFingerprint, hashValue, poseidonHash, stringToFieldElement } from '../../shared/utils/crypto-utils';
 
 @Component({
   selector: 'app-register',
@@ -19,6 +19,7 @@ export class RegisterComponent {
     password2: '' 
   };
   loading = false;
+  loadingMessage = 'Loading...';
 
   constructor(
     private http: HttpClient, 
@@ -40,6 +41,7 @@ export class RegisterComponent {
     this.loading = true;
     
     try {
+      this.loadingMessage = 'Generating wallet...';
       // 1. Generate Ethereum Wallet
       const wallet = await this.generateWallet();
 
@@ -59,12 +61,19 @@ export class RegisterComponent {
       const crypto = await import('crypto-js');
       const userShard = crypto.AES.encrypt(sharesBase64[0], this.user.password);
       
+      // Get a field element representation of the username - using standardized function
+      const usernameFieldElement = stringToFieldElement(this.user.name);
+      console.log("UserSalt: ", userSalt);
+      console.log("Raw UsernameFieldElement: ", usernameFieldElement.toString());
+      
       // 3. Generate ZKP identity commitments
-      const usernameHash = await poseidonHash([this.user.name]);
-      const saltCommitment = await poseidonHash([this.user.name, userSalt]);
+      const usernameHash = await poseidonHash([usernameFieldElement.toString()]);
+      const saltCommitment = await poseidonHash([usernameFieldElement.toString(), userSalt]);
       const identityCommitment = await poseidonHash([sharesBase64[0], userSalt]);
       const deviceCommitment = await poseidonHash([identityCommitment, deviceId]);
       
+      console.log("Username field element Register:", usernameFieldElement.toString());
+      console.log("Username:" , this.user.name);
       console.log("Username hash:", usernameHash);
       console.log("Salt commitment:", saltCommitment);
       console.log("Identity commitment:", identityCommitment);
@@ -88,6 +97,7 @@ export class RegisterComponent {
       };
 
       console.log("Registration data:", registrationData);
+      this.loadingMessage = 'Registering user...';
 
       this.http.post('http://localhost:5010/api/auth/register', registrationData)
         .subscribe({
@@ -124,6 +134,8 @@ export class RegisterComponent {
             alert('Registration successful! Your wallet information has been split into 5 shares (threshold: 4) and downloaded as wallet-zkp-shares.json. Please store this file securely.');
 
             localStorage.setItem('userShard', userShard.toString());
+            localStorage.setItem('userSalt', userSalt);
+            localStorage.setItem('deviceId', deviceId);
             // Redirect to login
             this.router.navigate(['/login']);
           },
@@ -146,26 +158,6 @@ export class RegisterComponent {
     window.crypto.getRandomValues(array);
     return '0x' + Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
   }
-
-  // // Get device fingerprint using browser information
-  // private async getDeviceFingerprint(): Promise<string> {
-  //   const screenInfo = `${window.screen.width}x${window.screen.height}x${window.screen.colorDepth}`;
-  //   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  //   const language = navigator.language;
-  //   const userAgent = navigator.userAgent;
-    
-  //   return await this.hashValue(screenInfo + timeZone + language + userAgent);
-  // }
-
-  // // Hash a value using browser's native crypto API
-  // private async hashValue(value: string): Promise<string> {
-  //   const encoder = new TextEncoder();
-  //   const data = encoder.encode(value);
-  //   const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
-  //   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  //   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  //   return '0x' + hashHex;
-  // }
 
   private async generateWallet() {
     const ethers = await import('ethers');

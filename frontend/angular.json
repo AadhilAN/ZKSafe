@@ -17,6 +17,11 @@
         "build": {
           "builder": "@angular-devkit/build-angular:browser",
           "options": {
+            "allowedCommonJsDependencies": [
+              "crypto-js",
+              "snarkjs",
+              "buffer",
+              "shamirs-secret-sharing"],
             "outputPath": "dist/frontend",
             "index": "src/index.html",
             "main": "src/main.ts",
