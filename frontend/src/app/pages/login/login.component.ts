@@ -22,29 +22,29 @@ export class LoginComponent implements OnInit {
   uploadedFileName = '';
   loading = false;
   loadingMessage = 'Processing...';
-  showFileUpload = false;
+  //showFileUpload = false;
   
   private apiUrl = 'http://localhost:5010/api/auth';
 
   constructor(private http: HttpClient, private router: Router) {}
 
   ngOnInit() {
-    this.checkLocalStorage();
+    //this.checkLocalStorage();
   }
 
-  checkLocalStorage() {
-    const userShard = localStorage.getItem('userShard');
-    const userSalt = localStorage.getItem('userSalt');
-    const deviceId = localStorage.getItem('deviceId');
+  // checkLocalStorage() {
+  //   const userShard = localStorage.getItem('userShard');
+  //   const userSalt = localStorage.getItem('userSalt');
+  //   const deviceId = localStorage.getItem('deviceId');
 
-    this.showFileUpload = !userShard || !userSalt || !deviceId;
+  //   this.showFileUpload = !userShard || !userSalt || !deviceId;
     
-    if (this.showFileUpload) {
-      setTimeout(() => {
-        alert('Key file data is missing. Please upload your key file to continue.');
-      }, 500);
-    }
-  }
+  //   if (this.showFileUpload) {
+  //     setTimeout(() => {
+  //       alert('Key file data is missing. Please upload your key file to continue.');
+  //     }, 500);
+  //   }
+  // }
 
   async login() {
     if (!this.user.email || !this.user.password || !this.user.password2) {
@@ -180,16 +180,16 @@ export class LoginComponent implements OnInit {
         deviceId: deviceIdBigInt,
         username: usernameFieldElement.toString(), // Use our calculated field element
         usernameHash: challengeResponse.usernameHash,
-        publicIdentityCommitment: BigInt(challengeResponse.publicIdentityCommitment),
-        registeredSaltCommitment: BigInt(challengeResponse.registeredSaltCommitment), 
-        deviceCommitment: BigInt(challengeResponse.deviceCommitment),
+        publicIdentityCommitment: challengeResponse.publicIdentityCommitment,
+        registeredSaltCommitment: challengeResponse.registeredSaltCommitment, 
+        deviceCommitment: challengeResponse.deviceCommitment,
         lastAuthTimestamp: BigInt(challengeResponse.lastAuthTimestamp),
         currentTimestamp: BigInt(challengeResponse.currentTimestamp),
         maxTimestamp: BigInt(challengeResponse.maxTimestamp),
-        challengeValue: BigInt(challengeResponse.challengeValue),
-        expectedChallengeResponse: BigInt(challengeResponse.expectedChallengeResponse),
-        securityThreshold: BigInt(challengeResponse.securityThreshold),
-        minSecurityThreshold: BigInt(challengeResponse.minSecurityThreshold)
+        challengeValue: challengeResponse.challengeValue,
+        expectedChallengeResponse: challengeResponse.expectedChallengeResponse,
+        securityThreshold: challengeResponse.securityThreshold,
+        minSecurityThreshold: challengeResponse.minSecurityThreshold
       };
       
       console.log('Circuit inputs:', {
@@ -213,7 +213,7 @@ export class LoginComponent implements OnInit {
       // Load circuit artifacts
       const [wasm, zkey] = await Promise.all([
         fetch('assets/wallet_auth_circuit.wasm').then(r => r.arrayBuffer()),
-        fetch('assets/wallet_auth_0000.zkey').then(r => r.arrayBuffer())
+        fetch('assets/final_0000.zkey').then(r => r.arrayBuffer())
       ]);
       
       // Generate ZK proof

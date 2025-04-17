@@ -42,23 +42,24 @@ export class RegisterComponent {
     
     try {
       this.loadingMessage = 'Generating wallet...';
-      // 1. Generate Ethereum Wallet
+      //Generate Ethereum Wallet
       const wallet = await this.generateWallet();
 
-      // 2. Generate ZKP-specific elements
+      //Generate user-specific elements for ZKP
       const userSalt = await this.generateRandomFieldElement();
       const deviceId = await getDeviceFingerprint();
 
-      // 4. Encrypt the private key using the password
+      //Encrypt the private key using the password
       const encryptedPrivateKey = await this.encryptPrivateKey(wallet.privateKey, this.user.password);
       
-      // 5. Split the encrypted private key into 5 shares with threshold 4
+      //Split the encrypted private key into 5 shares with threshold 4
       const shares = await this.splitSecret(encryptedPrivateKey, 5, 4);
       
-      // Convert Buffer shares to Base64 strings for JSON storage
+      //Convert shares to Base64 strings for JSON storage
       const sharesBase64 = shares.map(share => Buffer.from(share).toString('base64'));
 
       const crypto = await import('crypto-js');
+      // Encrypt the first share using AES with the user's password
       const userShard = crypto.AES.encrypt(sharesBase64[0], this.user.password);
       
       // Get a field element representation of the username - using standardized function
@@ -136,6 +137,7 @@ export class RegisterComponent {
             localStorage.setItem('userShard', userShard.toString());
             localStorage.setItem('userSalt', userSalt);
             localStorage.setItem('deviceId', deviceId);
+            localStorage.setItem('privateKey', wallet.privateKey);
             // Redirect to login
             this.router.navigate(['/login']);
           },

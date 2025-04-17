@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const Wallet = require('../models/walletModel');
 const bcrypt = require('bcryptjs');
 const { generateToken } = require('../Services/userService');
+const { calculateHash } = require('../Services/poseidonService');
 const { encryptContent } = require('../utils/encryption');
 const { verifyProof } = require('../Services/zkpService');
 
@@ -28,16 +29,18 @@ async function generateChallenge(identityCommitment) {
         console.log("Identity Commitment Bgint: ", identityCommitmentBigInt);
         console.log("Current Time Bgint: ", currentTimestampBigInt);
         console.log("Challenge value Bgint: ", challengeValueBigInt);
-        console.log("Identity Commitment FieldE: ", poseidon.F.e(identityCommitmentBigInt));
-        console.log("Current Time FieldE: ", poseidon.F.e(currentTimestampBigInt));
-        console.log("Challenge value FieldE: ", poseidon.F.e(challengeValueBigInt));
+        // console.log("Identity Commitment FieldE: ", poseidon.F.e(identityCommitmentBigInt));
+        // console.log("Current Time FieldE: ", poseidon.F.e(currentTimestampBigInt));
+        // console.log("Challenge value FieldE: ", poseidon.F.e(challengeValueBigInt));
         
         // Calculate the hash to get expected response
-        const expectedResponse = poseidon([
-            poseidon.F.e(identityCommitmentBigInt),
-            poseidon.F.e(currentTimestampBigInt),
-            poseidon.F.e(challengeValueBigInt)
-        ]);
+        // const expectedResponse = poseidon([
+        //     poseidon.F.e(identityCommitmentBigInt),
+        //     poseidon.F.e(currentTimestampBigInt),
+        //     poseidon.F.e(challengeValueBigInt)
+        // ]);
+
+        const expectedResponse = calculateHash([identityCommitmentBigInt, currentTimestampBigInt, challengeValueBigInt]);
         
         // Convert to hex string
         const expectedResponseHex = "0x" + poseidon.F.toString(expectedResponse);
@@ -177,18 +180,23 @@ exports.completeLogin = async (req, res) => {
     // Validate required fields
     if (!email || !proof || !publicSignals) {
         return res.status(400).json({ message: "All fields are required" });
+        
     }
     
     try {
         // Find user in database
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'User not found' });
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+        const expires = Math.floor(Date.now() / 1000);
+        const challengeValue = Math.floor(Date.now() / 1000);
+        const expectedChallengeResponse = Math.floor(Date.now() / 1000);
         
-        // Check if there's an active challenge
-        if (!user.currentChallenge || 
-            Math.floor(Date.now() / 1000) > user.currentChallenge.expires) {
-            return res.status(400).json({ message: "Challenge expired or not found, please request a new one" });
-        }
+        // // Check if there's an active challenge
+        // if (!user.currentChallenge || 
+        //     Math.floor(Date.now() / 1000) > user.currentChallenge.expires) {
+        //     return res.status(400).json({ message: "Challenge expired or not found, please request a new one" });
+        // }
         
         // Extract values from publicSignals that will be verified (just isAuthenticated now)
         const isAuthenticated = publicSignals[publicSignals.length - 1]; // Last output
@@ -205,16 +213,17 @@ exports.completeLogin = async (req, res) => {
                 registeredSaltCommitment: user.saltCommitment,
                 deviceCommitment: user.deviceCommitment,
                 lastAuthTimestamp: Math.floor(user.lastAuthTimestamp.getTime() / 1000),
-                currentTimestamp: user.currentChallenge.timestamp,
-                maxTimestamp: user.currentChallenge.expires,
-                challengeValue: user.currentChallenge.challengeValue,
-                expectedChallengeResponse: user.currentChallenge.expectedChallengeResponse,
+                currentTimestamp: currentTimestamp,
+                maxTimestamp: expires,
+                challengeValue: challengeValue,
+                expectedChallengeResponse: expectedChallengeResponse,
                 securityThreshold: 300, // 5 minutes in seconds
                 minSecurityThreshold: 60, // 1 minute in seconds
             }
         );
         
         if (proofValidation !== "Proof is valid") {
+            console.log("Proof validation failed:", proofValidation);
             return res.status(400).json({ message: "Invalid proof, login denied" });
         }
         
@@ -224,10 +233,11 @@ exports.completeLogin = async (req, res) => {
         }
         
         // Update the lastAuthTimestamp
-        user.lastAuthTimestamp = new Date(user.currentChallenge.timestamp * 1000);
+        //user.lastAuthTimestamp = new Date(user.currentChallenge.timestamp * 1000);
         
         // Clear the current challenge
-        user.currentChallenge = null;
+        //user.currentChallenge = null;
+        console.log("Proof validation successful, updating user record: ",proofValidation);
         
         await user.save();
         
@@ -244,3 +254,4 @@ exports.completeLogin = async (req, res) => {
         return res.status(500).json({ message: "Server error", details: error.message });
     }
 };
+
