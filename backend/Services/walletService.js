@@ -66,23 +66,23 @@ const getBalance = async (walletAddress) => {
     }
 };
 
-// Transfer Ether
-// const transferEther = async (email, to, amount) => {
-//     try {
-//         const privateKey = await getPrivateKeyFromFile(email); // Read private key from file
-//         const wallet = new Wallet(privateKey, provider);
+//Transfer Ether
+const transferEther = async (email, to, amount) => {
+    try {
+        const privateKey = await getPrivateKeyFromFile(email); // Read private key from file
+        const wallet = new Wallet(privateKey, provider);
 
-//         const transaction = {
-//             to,
-//             value: parseEther(amount),
-//         };
+        const transaction = {
+            to,
+            value: parseEther(amount),
+        };
 
-//         const txResponse = await wallet.sendTransaction(transaction);
-//         const receipt = await txResponse.wait();
-//         return receipt;
-//     } catch (error) {
-//         throw new Error(`Transaction failed: ${error.message}`);
-//     }
-// };
+        const txResponse = await wallet.sendTransaction(transaction);
+        const receipt = await txResponse.wait();
+        return receipt;
+    } catch (error) {
+        throw new Error(`Transaction failed: ${error.message}`);
+    }
+};
 
 module.exports = { getBalance, transferEther };

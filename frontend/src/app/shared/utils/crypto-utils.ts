@@ -1,3 +1,6 @@
+//import * as snarkjs from 'snarkjs';
+import * as crypto from 'crypto';
+import { groth16 } from 'snarkjs';
 /**
  * Generates a device fingerprint using browser information
  * @returns A hex string hash uniquely identifying the device
@@ -48,7 +51,25 @@ export function stringToFieldElement(str: string): bigint {
     return result % FIELD_SIZE;
 }
 
-// Use the server-side API for poseidon hashing instead of trying to run it in browser
+async function convertInputToField(input: string): Promise<string> {
+    if (typeof input === 'string') {
+      // Case 1: input is a hex string
+      if (input.startsWith('0x')) {
+        return BigInt(input).toString();
+      }
+  
+      // Case 2: base64-like or very long (AES ciphertext etc.)
+      if (/[+/=]/.test(input) || input.length > 100) {
+        const hash = await hashValue(input); // browser SHA-256
+        return BigInt(hash).toString();
+      }
+    }
+  
+    // Case 3: number or plain string
+    return input.toString();
+  }
+
+// // Use the server-side API for poseidon hashing instead of trying to run it in browser
 export async function poseidonHash(inputs: any[]): Promise<string> {
     try {
         // Always use the API for poseidon hashing
@@ -76,3 +97,49 @@ export async function poseidonHash(inputs: any[]): Promise<string> {
         }
     }
 }
+
+export async function calculateHash(inputs: string[]): Promise<string> {
+    try {
+      if (inputs.length === 0 || inputs.length > 3) {
+        throw new Error('Only 1 to 3 inputs are supported');
+      }
+  
+      const circuitMap: Record<number, string> = {
+        1: 'hash/hash.wasm',
+        2: 'hash/hash2.wasm',
+        3: 'hash/hash3.wasm'
+      };
+  
+      const zkeyMap: Record<number, string> = {
+        1: 'hash/hash_0000.zkey',
+        2: 'hash/hash2_0000.zkey',
+        3: 'hash/hash3_0000.zkey'
+      };
+  
+      const wasmPath = `assets/${circuitMap[inputs.length]}`;
+      const zkeyPath = `assets/${zkeyMap[inputs.length]}`;
+  
+      const plainText = await Promise.all(inputs.map(convertInputToField));
+      const circuitInput = { plainText };
+  
+      const [wasmBuffer, zkeyBuffer] = await Promise.all([
+        fetch(wasmPath).then(res => res.arrayBuffer()),
+        fetch(zkeyPath).then(res => res.arrayBuffer())
+      ]);
+  
+      //https://github.com/iden3/snarkjs#in-the-browser
+      const { proof, publicSignals } = await groth16.fullProve(
+        circuitInput,
+        new Uint8Array(wasmBuffer),
+        new Uint8Array(zkeyBuffer)
+      );
+  
+      const hash = publicSignals[0];
+      return '0x' + BigInt(hash).toString(16);
+  
+    } catch (err) {
+      console.error("Error calculating ZKP hash in browser:", err);
+      throw err;
+    }
+  }
+  
