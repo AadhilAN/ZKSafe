@@ -1,4 +1,10 @@
 module.exports = {
+  plugins: [
+    // ... your other plugins
+    new webpack.ProvidePlugin({
+      process: 'process/browser',
+    }),
+  ],
     resolve: {
       fallback: {
         "crypto": require.resolve("crypto-browserify"),

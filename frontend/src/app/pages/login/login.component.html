@@ -27,7 +27,7 @@
         <input type="password" id="password2" placeholder="Confirm Password" [(ngModel)]="user.password2" name="password2" required class="w-full p-3 border border-gray-300 rounded-md focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
       </div>
 
-      <!-- Key File Upload -->
+      <!-- Key File Upload - Only shown when needed -->
       <div class="mb-5">
         <label class="block mb-1 text-gray-700 font-medium">Upload Key File</label>
         <div class="flex items-center">
@@ -45,7 +45,7 @@
       </div>
 
       <button type="submit" class="bg-gray-800 text-white rounded-md py-3 font-semibold w-full hover:bg-blue-500 transition duration-200" [disabled]="loading">
-        {{ loading ? 'Authenticating...' : 'Login' }}
+        {{ loading ? loadingMessage : 'Login' }}
       </button>
       <div class="mt-5 text-center text-gray-600 text-sm">
         Don't have an account? <a href="/register" class="text-blue-600 hover:underline">Sign up</a>

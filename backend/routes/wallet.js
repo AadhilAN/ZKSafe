@@ -10,6 +10,6 @@ router.get('/details', authenticate, getWalletAddress);
 router.get('/balance', authenticate, getWalletBalance);
 
 // Route to send Ether
-router.post('/send', authenticate, sendEther);
+router.post('/transfer', authenticate, sendEther);
 
 module.exports = router;

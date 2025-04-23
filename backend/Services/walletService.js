@@ -66,7 +66,7 @@ const getBalance = async (walletAddress) => {
     }
 };
 
-// Transfer Ether
+//Transfer Ether
 const transferEther = async (email, to, amount) => {
     try {
         const privateKey = await getPrivateKeyFromFile(email); // Read private key from file
