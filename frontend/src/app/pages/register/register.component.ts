@@ -61,6 +61,7 @@ export class RegisterComponent {
       const crypto = await import('crypto-js');
       // Encrypt the first share using AES with the user's password
       const userShard = crypto.AES.encrypt(sharesBase64[0], this.user.password);
+      console.log("shareBase64: ", sharesBase64[0]);
       
       // Get a field element representation of the username - using standardized function
       const usernameFieldElement = stringToFieldElement(this.user.name);
@@ -70,12 +71,16 @@ export class RegisterComponent {
       
       // 3. Generate ZKP identity commitments
       //const usernameHash = await poseidonHash([usernameFieldElement.toString()]);
+      console.log("Hashing username field element...");
       const usernameHash2 = await calculateHash([usernameFieldElement.toString()]);
       //const saltCommitment = await poseidonHash([usernameFieldElement.toString(), userSalt]);
+      console.log("Hashing salt commitment...");
       const saltCommitment2 = await calculateHash([usernameFieldElement.toString(), userSalt]);
       //const identityCommitment = await poseidonHash([sharesBase64[0], userSalt]);
+      console.log("Hashing identity commitment...");
       const identityCommitment2 = await calculateHash([sharesBase64[0], userSalt]);
       //const deviceCommitment = await poseidonHash([identityCommitment, deviceId]);
+      console.log("Hashing device commitment...");
       const deviceCommitment2 = await calculateHash([identityCommitment2, deviceId]);
       
       console.log("Username field element Register:", usernameFieldElement.toString());

@@ -12,6 +12,12 @@ const UserSchema = new mongoose.Schema({
     deviceCommitment: { type: String, required: true },
     lastAuthTimestamp: { type: Date, required: true },
     walletID: { type: mongoose.Schema.Types.ObjectId,ref: "Wallet", required: true },
+    currentChallenge: {
+        challengeValue: { type: String, required: false },
+        expectedChallengeResponse: { type: String, required: false },
+        timestamp: { type: Date, required: false },
+        expires: { type: Date, required: false }
+      },
     createdAt: { type: Date, default: Date.now },
 });
 

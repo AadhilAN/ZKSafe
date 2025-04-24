@@ -51,7 +51,7 @@ export function stringToFieldElement(str: string): bigint {
     return result % FIELD_SIZE;
 }
 
-async function convertInputToField(input: string): Promise<string> {
+export async function convertInputToField(input: string): Promise<string> {
     if (typeof input === 'string') {
       // Case 1: input is a hex string
       if (input.startsWith('0x')) {
@@ -103,6 +103,7 @@ export async function calculateHash(inputs: string[]): Promise<string> {
       if (inputs.length === 0 || inputs.length > 3) {
         throw new Error('Only 1 to 3 inputs are supported');
       }
+      console.log("Inputs for ZKP hash:", inputs);
   
       const circuitMap: Record<number, string> = {
         1: 'hash/hash.wasm',
@@ -121,7 +122,8 @@ export async function calculateHash(inputs: string[]): Promise<string> {
   
       const plainText = await Promise.all(inputs.map(convertInputToField));
       const circuitInput = { plainText };
-  
+      console.log("Circuit Input:", circuitInput);
+
       const [wasmBuffer, zkeyBuffer] = await Promise.all([
         fetch(wasmPath).then(res => res.arrayBuffer()),
         fetch(zkeyPath).then(res => res.arrayBuffer())
@@ -133,8 +135,13 @@ export async function calculateHash(inputs: string[]): Promise<string> {
         new Uint8Array(wasmBuffer),
         new Uint8Array(zkeyBuffer)
       );
+      console.log("Public Signals:", publicSignals);
   
       const hash = publicSignals[0];
+      console.log("Hash:", hash);
+      // Convert to hex string
+      const hashHex = BigInt(hash).toString(16);
+      console.log("Sending: ", hashHex);
       return '0x' + BigInt(hash).toString(16);
   
     } catch (err) {

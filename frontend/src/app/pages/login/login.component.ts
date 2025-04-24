@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import * as snarkjs from 'snarkjs';
-import { stringToFieldElement } from '../../shared/utils/crypto-utils';
+import { stringToFieldElement, hashValue, convertInputToField } from '../../shared/utils/crypto-utils';
 
 @Component({
   selector: 'app-login',
@@ -112,17 +112,8 @@ export class LoginComponent implements OnInit {
       }
 
       // Convert Base64 key share to BigInt
-      let keyShare;
-      try {
-        const keyShareBuffer = Buffer.from(keyShareBase64, 'base64');
-        const keyShareHex = keyShareBuffer.toString('hex');
-        keyShare = BigInt('0x' + keyShareHex);
-      } catch (err) {
-        console.error("Error converting keyShare to BigInt:", err);
-        alert("Invalid keyShare format. Please upload your key file again.");
-        this.loading = false;
-        return;
-      }
+      console.log("Key share base64:", keyShareBase64);
+      //let keyShare;
       
       // Convert userSalt and deviceId to BigInt safely
       let userSaltBigInt;
@@ -166,6 +157,7 @@ export class LoginComponent implements OnInit {
       
       // Get a field element representation of the username using standardized function
       const usernameFieldElement = stringToFieldElement(challengeResponse.username);
+      const keyShare = await convertInputToField(keyShareBase64.toString());
       console.log("Username field element Login:", usernameFieldElement.toString());
       console.log("Username:", challengeResponse.username);
       console.log("Username hash:", challengeResponse.usernameHash);
@@ -179,8 +171,8 @@ export class LoginComponent implements OnInit {
         userSalt: userSaltBigInt,
         deviceId: deviceIdBigInt,
         username: usernameFieldElement.toString(), // Use our calculated field element
-        usernameHash: challengeResponse.usernameHash,
-        publicIdentityCommitment: challengeResponse.publicIdentityCommitment,
+        usernameHash: BigInt(challengeResponse.usernameHash),
+        publicIdentityCommitment: BigInt(challengeResponse.publicIdentityCommitment),
         registeredSaltCommitment: challengeResponse.registeredSaltCommitment, 
         deviceCommitment: challengeResponse.deviceCommitment,
         lastAuthTimestamp: BigInt(challengeResponse.lastAuthTimestamp),
@@ -212,8 +204,10 @@ export class LoginComponent implements OnInit {
       
       // Load circuit artifacts
       const [wasm, zkey] = await Promise.all([
-        fetch('assets/wallet_auth_circuit.wasm').then(r => r.arrayBuffer()),
-        fetch('assets/final_0000.zkey').then(r => r.arrayBuffer())
+        //fetch('assets/circuit/wallet_auth_circuit.wasm').then(r => r.arrayBuffer()),
+        //fetch('assets/final_0000.zkey').then(r => r.arrayBuffer())
+        fetch('assets/circuit/wallet_auth_circuit.wasm').then(r => r.arrayBuffer()),
+        fetch('assets/circuit/wallet_auth_circuit_0000.zkey').then(r => r.arrayBuffer())
       ]);
       
       // Generate ZK proof
@@ -223,6 +217,8 @@ export class LoginComponent implements OnInit {
         new Uint8Array(wasm),
         new Uint8Array(zkey)
       );
+      console.log("Proof:", proof);
+      console.log("Public signals:", publicSignals);
       
       // Verify proof with server
       this.loadingMessage = 'Verifying proof...';
@@ -235,7 +231,8 @@ export class LoginComponent implements OnInit {
             pi_b: proof.pi_b,
             pi_c: proof.pi_c
           },
-          publicSignals: publicSignals
+          publicSignals: publicSignals,
+          challengeData: challengeResponse.challengeValue,
         }
       ).toPromise();
       

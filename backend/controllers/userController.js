@@ -29,25 +29,12 @@ async function generateChallenge(identityCommitment) {
         console.log("Identity Commitment Bgint: ", identityCommitmentBigInt);
         console.log("Current Time Bgint: ", currentTimestampBigInt);
         console.log("Challenge value Bgint: ", challengeValueBigInt);
-        // console.log("Identity Commitment FieldE: ", poseidon.F.e(identityCommitmentBigInt));
-        // console.log("Current Time FieldE: ", poseidon.F.e(currentTimestampBigInt));
-        // console.log("Challenge value FieldE: ", poseidon.F.e(challengeValueBigInt));
-        
-        // Calculate the hash to get expected response
-        // const expectedResponse = poseidon([
-        //     poseidon.F.e(identityCommitmentBigInt),
-        //     poseidon.F.e(currentTimestampBigInt),
-        //     poseidon.F.e(challengeValueBigInt)
-        // ]);
 
-        const expectedResponse = calculateHash([identityCommitmentBigInt, currentTimestampBigInt, challengeValueBigInt]);
-        
-        // Convert to hex string
-        const expectedResponseHex = "0x" + poseidon.F.toString(expectedResponse);
+        const expectedResponse = await calculateHash([identityCommitmentBigInt, currentTimestampBigInt, challengeValueBigInt]);
         
         return {
             challengeValue,
-            expectedChallengeResponse: expectedResponseHex,
+            expectedChallengeResponse: expectedResponse,
             currentTimestamp,
             // Calculate a reasonable max timestamp (1 hour in the future)
             maxTimestamp: currentTimestamp + 3600
@@ -61,7 +48,7 @@ async function generateChallenge(identityCommitment) {
 // Register User
 exports.register = async (req, res) => {
     const { name, email, password, password2, walletAddress, publicKey, usernameHash, saltCommitment, identityCommitment, deviceCommitment, lastAuthTimestamp} = req.body;
-    console.log("Registering user with data: ", req.body);
+    //console.log("Registering user with data: ", req.body);
     if (!name || !email || !password || !password2 || !walletAddress || !publicKey || !usernameHash || !saltCommitment || !identityCommitment || !deviceCommitment || !lastAuthTimestamp) {
         return res.status(400).json({ message: "All fields are required" });
     }
@@ -136,10 +123,6 @@ exports.initiateLogin = async (req, res) => {
             expires: challengeData.maxTimestamp
         };
         await user.save();
-
-        // IMPORTANT: For the ZK circuit, we need to use the SAME username hash value
-        // that was registered originally, not compute a new one
-        // This ensures consistency with the stored values
         
         // Return challenge data and necessary public inputs to client
         res.status(200).json({
@@ -148,7 +131,7 @@ exports.initiateLogin = async (req, res) => {
             currentTimestamp: challengeData.currentTimestamp,
             maxTimestamp: challengeData.maxTimestamp,
             
-            // Circuit public inputs - use the stored hash values directly
+            // Circuit public inputs - use the stored hash values directly from db
             usernameHash: user.usernameHash,
             username: user.name,
             publicIdentityCommitment: user.identityCommitment,
@@ -175,10 +158,10 @@ exports.initiateLogin = async (req, res) => {
 
 // Phase 2: Complete Login - Verify proof and issue token
 exports.completeLogin = async (req, res) => {
-    const { email, proof, publicSignals } = req.body;
+    const { email, proof, publicSignals, challengeData } = req.body;
     
     // Validate required fields
-    if (!email || !proof || !publicSignals) {
+    if (!email || !proof || !publicSignals || !challengeData) {
         return res.status(400).json({ message: "All fields are required" });
         
     }
@@ -187,19 +170,6 @@ exports.completeLogin = async (req, res) => {
         // Find user in database
         const user = await User.findOne({ email });
         if (!user) return res.status(404).json({ message: 'User not found' });
-        const currentTimestamp = Math.floor(Date.now() / 1000);
-        const expires = Math.floor(Date.now() / 1000);
-        const challengeValue = Math.floor(Date.now() / 1000);
-        const expectedChallengeResponse = Math.floor(Date.now() / 1000);
-        
-        // // Check if there's an active challenge
-        // if (!user.currentChallenge || 
-        //     Math.floor(Date.now() / 1000) > user.currentChallenge.expires) {
-        //     return res.status(400).json({ message: "Challenge expired or not found, please request a new one" });
-        // }
-        
-        // Extract values from publicSignals that will be verified (just isAuthenticated now)
-        const isAuthenticated = publicSignals[publicSignals.length - 1]; // Last output
         
         // Validate proof against the circuit
         const proofValidation = await verifyProof(
@@ -213,10 +183,10 @@ exports.completeLogin = async (req, res) => {
                 registeredSaltCommitment: user.saltCommitment,
                 deviceCommitment: user.deviceCommitment,
                 lastAuthTimestamp: Math.floor(user.lastAuthTimestamp.getTime() / 1000),
-                currentTimestamp: currentTimestamp,
-                maxTimestamp: expires,
-                challengeValue: challengeValue,
-                expectedChallengeResponse: expectedChallengeResponse,
+                currentTimestamp: challengeData.currentTimestamp,
+                maxTimestamp: challengeData.maxTimestamp,
+                challengeValue: challengeData.challengeValue,
+                expectedChallengeResponse: challengeData.expectedChallengeResponse,
                 securityThreshold: 300, // 5 minutes in seconds
                 minSecurityThreshold: 60, // 1 minute in seconds
             }
@@ -227,16 +197,11 @@ exports.completeLogin = async (req, res) => {
             return res.status(400).json({ message: "Invalid proof, login denied" });
         }
         
-        // Now that the proof is verified, check if the authentication was successful
-        if (isAuthenticated !== "1") {
-            return res.status(400).json({ message: "Proof does not verify successful authentication" });
-        }
-        
         // Update the lastAuthTimestamp
-        //user.lastAuthTimestamp = new Date(user.currentChallenge.timestamp * 1000);
+        user.lastAuthTimestamp = new Date(user.currentChallenge.timestamp * 1000);
         
         // Clear the current challenge
-        //user.currentChallenge = null;
+        user.currentChallenge = null;
         console.log("Proof validation successful, updating user record: ",proofValidation);
         
         await user.save();
