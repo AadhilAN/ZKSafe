@@ -1,6 +1,10 @@
 //import * as snarkjs from 'snarkjs';
-import * as crypto from 'crypto';
+// import * as crypto from 'crypto';
+import * as CryptoJS from 'crypto-js';
 import { groth16 } from 'snarkjs';
+import * as sss from 'shamirs-secret-sharing';
+import { Buffer } from 'buffer';
+import { ethers, Wallet } from 'ethers';
 /**
  * Generates a device fingerprint using browser information
  * @returns A hex string hash uniquely identifying the device
@@ -149,4 +153,53 @@ export async function calculateHash(inputs: string[]): Promise<string> {
       throw err;
     }
   }
+
+  /**
+ * Combines Shamir's Secret Sharing shares to reconstruct the original secret
+ * @param shares The shares as Uint8Array[]
+ * @returns The reconstructed secret as a string
+ */
+export async function combineShares(shares: Uint8Array[]): Promise<string> {
+  // Combine the shares to reconstruct the secret
+  const recoveredBuffer = sss.combine(shares);
+  
+  // Convert Buffer back to string
+  return recoveredBuffer.toString('utf8');
+}
+
+/**
+* Reconstructs and decrypts a private key from Shamir's Secret Sharing shares
+ * @param sharesBase64 Array of base64-encoded shares
+ * @param password Password to decrypt the wallet
+ * @returns The decrypted private key
+ */
+export async function reconstructAndDecryptPrivateKey(
+  encryptedUserShard: string,
+  otherSharesBase64: string[],
+  password: string
+): Promise<string> {
+  try {
+    // Step 1: Decrypt the AES-encrypted user shard using password
+    const decryptedShard = CryptoJS.AES.decrypt(encryptedUserShard, password).toString(CryptoJS.enc.Utf8);
+
+    if (!decryptedShard) {
+      throw new Error('Failed to decrypt user shard. Password may be incorrect.');
+    }
+
+    // Step 2: Combine it with other base64-encoded shares
+    const allSharesBase64 = [decryptedShard, ...otherSharesBase64];
+    const shares: Uint8Array[] = allSharesBase64.map(share => Buffer.from(share, 'base64'));
+
+    // Step 3: Reconstruct encrypted wallet JSON
+    const encryptedJson = sss.combine(shares).toString('utf8');
+
+    // Step 4: Decrypt the encrypted wallet using ethers
+    const wallet = await Wallet.fromEncryptedJson(encryptedJson, password);
+
+    return wallet.privateKey;
+  } catch (error) {
+    console.error('Error reconstructing or decrypting private key:', error);
+    throw new Error('Failed to reconstruct or decrypt private key');
+  }
+}
   

@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { ethers } from 'ethers';
 import { JsonRpcProvider, Wallet } from 'ethers';
+import { reconstructAndDecryptPrivateKey } from 'src/app/shared/utils/crypto-utils'; // Adjust the import path as necessary
 
 @Component({
   selector: 'app-dashboard',
@@ -17,15 +18,40 @@ export class DashboardComponent implements OnInit {
   
   constructor(private http: HttpClient) {}
   
-  ngOnInit() {
+  async ngOnInit() {
+    await this.recoverPrivateKey()
     this.getWalletDetails();
     
+  }
+
+  async recoverPrivateKey() {
+    try {
+      const encryptedUserShard = localStorage.getItem('userShard');
+      const otherSharesJSON = sessionStorage.getItem('tempShares');
+      const password = sessionStorage.getItem('password');
+  
+      if (!encryptedUserShard || !otherSharesJSON || !password) {
+        throw new Error('Missing shards or password from storage.');
+      }
+  
+      const otherSharesBase64: string[] = JSON.parse(otherSharesJSON);
+  
+      this.privateKey = await reconstructAndDecryptPrivateKey(
+        encryptedUserShard,
+        otherSharesBase64,
+        password
+      );
+  
+      console.log('Private key successfully reconstructed');
+    } catch (err) {
+      console.error('Failed to recover private key:', err);
+      alert('Error recovering your wallet. Please log in again.');
+    }
   }
   
   // Fetch user wallet details (walletAddress)
   getWalletDetails() {
     const token = localStorage.getItem('token');
-    this.privateKey = localStorage.getItem('privateKey') || '';
     console.log(token);
     this.http.get<any>('http://localhost:5010/api/wallet/details', {
       headers: { Authorization: `${token}` }

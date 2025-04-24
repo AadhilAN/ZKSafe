@@ -22,29 +22,29 @@ export class LoginComponent implements OnInit {
   uploadedFileName = '';
   loading = false;
   loadingMessage = 'Processing...';
-  //showFileUpload = false;
+  showFileUpload = false;
   
   private apiUrl = 'http://localhost:5010/api/auth';
 
   constructor(private http: HttpClient, private router: Router) {}
 
   ngOnInit() {
-    //this.checkLocalStorage();
+    this.checkLocalStorage();
   }
 
-  // checkLocalStorage() {
-  //   const userShard = localStorage.getItem('userShard');
-  //   const userSalt = localStorage.getItem('userSalt');
-  //   const deviceId = localStorage.getItem('deviceId');
+  checkLocalStorage() {
+    const userShard = localStorage.getItem('userShard');
+    const userSalt = localStorage.getItem('userSalt');
+    const deviceId = localStorage.getItem('deviceId');
 
-  //   this.showFileUpload = !userShard || !userSalt || !deviceId;
+    this.showFileUpload = !userShard || !userSalt || !deviceId;
     
-  //   if (this.showFileUpload) {
-  //     setTimeout(() => {
-  //       alert('Key file data is missing. Please upload your key file to continue.');
-  //     }, 500);
-  //   }
-  // }
+    if (this.showFileUpload) {
+      setTimeout(() => {
+        alert('Key file data is missing. Please upload your key file to continue.');
+      }, 500);
+    }
+  }
 
   async login() {
     if (!this.user.email || !this.user.password || !this.user.password2) {
@@ -76,16 +76,19 @@ export class LoginComponent implements OnInit {
       ).toPromise();
       
       // Get key share data from either uploaded file or localStorage
-      let keyShareBase64: string | null = null;
-      let userSaltValue: string | null = null;
-      let deviceIdValue: string | null = null;
+      // let keyShareBase64: string | null = null;
+      // let userSaltValue: string | null = null;
+      // let deviceIdValue: string | null = null;
 
-      if (this.circuitInput) {
-        keyShareBase64 = this.circuitInput.keyShare || 
-                       (this.circuitInput.shares && this.circuitInput.shares[0]);
-        userSaltValue = this.circuitInput.userSalt;
-        deviceIdValue = this.circuitInput.deviceId;
-      } else {
+      // if (this.circuitInput) {
+      //   keyShareBase64 = this.circuitInput.keyShare || 
+      //                  (this.circuitInput.shares && this.circuitInput.shares[0]);
+      //   userSaltValue = this.circuitInput.userSalt;
+      //   deviceIdValue = this.circuitInput.deviceId;
+      // } else {
+        let keyShareBase64;
+        let userSaltValue;
+        let deviceIdValue;
         const crypto = await import('crypto-js');
         // Decrypt the user shard using password
         const encryptedShard = localStorage.getItem('userShard');
@@ -103,7 +106,7 @@ export class LoginComponent implements OnInit {
         }
         userSaltValue = localStorage.getItem('userSalt');
         deviceIdValue = localStorage.getItem('deviceId');
-      }
+      //}
 
       if (!keyShareBase64 || !userSaltValue || !deviceIdValue) {
         alert('Missing required authentication data');
@@ -249,6 +252,7 @@ export class LoginComponent implements OnInit {
       // Store auth token
       localStorage.setItem('token', loginResponse.token);
       localStorage.setItem('email', loginResponse.email);
+      sessionStorage.setItem('password', this.user.password);
       
       this.router.navigate(['/dashboard']);
       
@@ -267,27 +271,31 @@ export class LoginComponent implements OnInit {
   onFileSelected(event: any) {
     const file = event.target.files[0];
     if (!file) return;
-
+  
     const reader = new FileReader();
     reader.onload = () => {
       try {
         const data = JSON.parse(reader.result as string);
-        
+  
         // Validate key file
-        if (!data.shares && !data.keyShare) {
-          throw new Error('Missing key share data');
+        if (!data.shares || !Array.isArray(data.shares)) {
+          throw new Error('Missing or invalid shares');
         }
         if (!data.userSalt) throw new Error('Missing user salt');
         if (!data.deviceId) throw new Error('Missing device ID');
-        
-        // Ensure at least one share exists
-        if (data.shares && data.shares.length === 0) {
-          throw new Error('No shares found in key file');
+  
+        // Ensure at least 4 shares exist to extract 2nd, 3rd, 4th
+        if (data.shares.length < 4) {
+          throw new Error('Insufficient shares found in key file');
         }
-        
+  
+        // Store shares 2, 3, 4 in sessionStorage (can also use localStorage)
+        const selectedShares = data.shares.slice(1, 4); // index 1 to 3
+        sessionStorage.setItem('tempShares', JSON.stringify(selectedShares));
+  
         this.circuitInput = data;
         this.uploadedFileName = file.name;
-        
+  
       } catch (e) {
         console.error('File error:', e);
         alert(`Invalid key file: ${(e as Error).message}`);
@@ -297,4 +305,5 @@ export class LoginComponent implements OnInit {
     };
     reader.readAsText(file);
   }
+  
 }
