@@ -1,5 +1,5 @@
 const snarkjs = require("snarkjs");
-const verificationKey = require("../../ZKP/circuits/final_verification_key.json");
+const verificationKey = require("../../ZKP/circuits/wallet_auth_circuit_js/wallet_auth_circuit_verification_key.json");
 
 async function verifyProof(proof, publicSignals) {
     if (!proof || !proof.pi_a || !proof.pi_b || !proof.pi_c) {
