@@ -44,6 +44,17 @@
         </div>
       </div>
 
+      <div class="mb-4">
+        <label class="block text-gray-700 font-medium mb-2">Verification Method</label>
+        <select [(ngModel)]="verificationMethod" name="verificationMethod" class="w-full px-3 py-2 border border-gray-300 rounded-md">
+          <option value="off-chain">Off-chain Verification (Server-side)</option>
+          <option value="on-chain">On-chain Verification (Blockchain)</option>
+        </select>
+        <p class="mt-1 text-sm text-gray-500">
+          On-chain verification uses blockchain technology for additional security.
+        </p>
+      </div>
+
       <button type="submit" class="bg-gray-800 text-white rounded-md py-3 font-semibold w-full hover:bg-blue-500 transition duration-200" [disabled]="loading">
         {{ loading ? loadingMessage : 'Login' }}
       </button>

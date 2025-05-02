@@ -23,6 +23,7 @@ export class LoginComponent implements OnInit {
   loading = false;
   loadingMessage = 'Processing...';
   showFileUpload = false;
+  verificationMethod: string = 'off-chain'; //Off-chain by defual
   
   private apiUrl = 'http://localhost:5010/api/auth';
 
@@ -75,17 +76,6 @@ export class LoginComponent implements OnInit {
         }
       ).toPromise();
       
-      // Get key share data from either uploaded file or localStorage
-      // let keyShareBase64: string | null = null;
-      // let userSaltValue: string | null = null;
-      // let deviceIdValue: string | null = null;
-
-      // if (this.circuitInput) {
-      //   keyShareBase64 = this.circuitInput.keyShare || 
-      //                  (this.circuitInput.shares && this.circuitInput.shares[0]);
-      //   userSaltValue = this.circuitInput.userSalt;
-      //   deviceIdValue = this.circuitInput.deviceId;
-      // } else {
         let keyShareBase64;
         let userSaltValue;
         let deviceIdValue;
@@ -225,8 +215,12 @@ export class LoginComponent implements OnInit {
       
       // Verify proof with server
       this.loadingMessage = 'Verifying proof...';
+      console.log("verficationMethod:", this.verificationMethod);
+      const endpoint = this.verificationMethod === 'on-chain' 
+        ? `${this.apiUrl}/complete-login-onchain` 
+        : `${this.apiUrl}/complete-login`;
       const loginResponse: any = await this.http.post(
-        `${this.apiUrl}/complete-login`,
+        endpoint,
         {
           email: this.user.email,
           proof: {

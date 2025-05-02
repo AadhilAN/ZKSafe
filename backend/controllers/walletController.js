@@ -34,10 +34,11 @@ exports.getWalletAddress = async (req, res) => {
 
 // Get Balance
 exports.getWalletBalance = async (req, res) => {
-    
     try {
+        console.log("Getting Wallet Balance");
         const wallet = await Wallet.findById(req.user.walletID);
         const { publicKey, balance } = await getBalance(wallet.walletAddress);
+        //console.log("Wallet Balance controller: ", balance.toString());
 
         res.status(200).json({ publicKey, balance });
     } catch (error) {

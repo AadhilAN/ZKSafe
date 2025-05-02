@@ -2,11 +2,12 @@ const fs = require('fs');
 const path = require('path');
 const User = require('../models/userModel');
 const { decryptContent } = require('../utils/encryption');
-const { JsonRpcProvider, formatEther, parseEther, Wallet } = require('ethers');
+const { Wallet, ethers } = require('ethers');
+const { parseEther, formatEther } = require('ethers/lib/utils'); 
 const { hash } = require('bcryptjs');
 const wallet = require('../models/walletModel');
 
-const provider = new JsonRpcProvider('https://sepolia.infura.io/v3/151e8b37d18b4b8ebbadc74f189ddf2e');
+const provider = new ethers.providers.JsonRpcProvider('https://sepolia.infura.io/v3/151e8b37d18b4b8ebbadc74f189ddf2e');
 
 // Get Wallet Details
 
@@ -60,6 +61,7 @@ const getBalance = async (walletAddress) => {
     try {
 
         const balance = await provider.getBalance(walletAddress);
+        //console.log("Balance service: ", balance.toString());
         return { balance: formatEther(balance) }; // Convert from Wei to Ether
     } catch (error) {
         throw new Error(`Failed to fetch balance: ${error.message}`);
