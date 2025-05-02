@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 const { generateToken } = require('../Services/userService');
 const { calculateHash } = require('../Services/poseidonService');
 const { encryptContent } = require('../utils/encryption');
-const { verifyProof } = require('../Services/zkpService');
+const { verifyProof, verifyProofOnchain } = require('../Services/zkpService');
 
 // Utility function to generate challenge and expected response
 async function generateChallenge(identityCommitment) {
@@ -220,3 +220,65 @@ exports.completeLogin = async (req, res) => {
     }
 };
 
+exports.completeLoginOnchainverfication = async (req, res) => {
+    const { email, proof, publicSignals, challengeData } = req.body;
+    
+    // Validate required fields
+    if (!email || !proof || !publicSignals || !challengeData) {
+        return res.status(400).json({ message: "All fields are required" });
+        
+    }
+    
+    try {
+        // Find user in database
+        const user = await User.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        // Validate proof against the circuit
+        const proofValidation = await verifyProofOnchain(
+            proof, 
+            publicSignals, 
+            // Additional public inputs needed by the verifier
+            {
+                // Use stored values directly
+                usernameHash: user.usernameHash,
+                publicIdentityCommitment: user.identityCommitment,
+                registeredSaltCommitment: user.saltCommitment,
+                deviceCommitment: user.deviceCommitment,
+                lastAuthTimestamp: Math.floor(user.lastAuthTimestamp.getTime() / 1000),
+                currentTimestamp: challengeData.currentTimestamp,
+                maxTimestamp: challengeData.maxTimestamp,
+                challengeValue: challengeData.challengeValue,
+                expectedChallengeResponse: challengeData.expectedChallengeResponse,
+                securityThreshold: 300, // 5 minutes in seconds
+                minSecurityThreshold: 60, // 1 minute in seconds
+            }
+        );
+        
+        if (proofValidation !== "Proof is valid (verified on-chain)") {
+            console.log("Proof validation failed:", proofValidation);
+            return res.status(400).json({ message: "Invalid proof, login denied" });
+        }
+        
+        // Update the lastAuthTimestamp
+        user.lastAuthTimestamp = new Date(user.currentChallenge.timestamp * 1000);
+        
+        // Clear the current challenge
+        user.currentChallenge = null;
+        console.log("Proof validation successful, updating user record: ",proofValidation);
+        
+        await user.save();
+        
+        // Generate JWT Token
+        const token = generateToken(user._id);
+        
+        return res.status(200).json({ 
+            message: "Login successful", 
+            token, 
+            email
+        });
+    } catch (error) {
+        console.error("Login completion error:", error);
+        return res.status(500).json({ message: "Server error", details: error.message });
+    }
+};
