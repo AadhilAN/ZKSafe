@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@pinata/sdk": "^2.1.0",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.3",
@@ -22,9 +23,12 @@
     "ethereumjs-tx": "^2.1.2",
     "ethers": "^5.7.2",
     "express": "^4.21.2",
+    "ipfs-http-client": "^60.0.1",
+    "ipfs-only-hash": "^4.0.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.8.4",
     "path": "^0.12.7",
+    "pinata": "^2.2.1",
     "snarkjs": "^0.7.5",
     "web3": "^4.15.0",
     "websnark": "^0.0.5"

@@ -83,7 +83,7 @@ exports.register = async (req, res) => {
         const token = generateToken(user._id);
         
         // Return user token and Ethereum address
-        res.status(201).json({ token, ethereumAddress: walletAddress });
+        res.status(201).json({ token, ethereumAddress: walletAddress, userId: user._id });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

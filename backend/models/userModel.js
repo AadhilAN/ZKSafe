@@ -12,6 +12,7 @@ const UserSchema = new mongoose.Schema({
     deviceCommitment: { type: String, required: true },
     lastAuthTimestamp: { type: Date, required: true },
     walletID: { type: mongoose.Schema.Types.ObjectId,ref: "Wallet", required: true },
+    ipfsSharesID: [{ type: mongoose.Schema.Types.ObjectId, ref: "IPFSShare" }],
     currentChallenge: {
         challengeValue: { type: String, required: false },
         expectedChallengeResponse: { type: String, required: false },

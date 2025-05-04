@@ -7,6 +7,7 @@ const userRoutes = require('./routes/user');
 const walletRoutes = require('./routes/wallet');
 const zkpRoutes = require("./routes/zkp");
 const poseidonRoutes = require('./routes/poseidon');
+const ipfsRoutes = require('./routes/ipfs');
 
 app.use(express.json());
 
@@ -24,6 +25,7 @@ app.use('/api/auth', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use("/api/zkp", zkpRoutes);
 app.use("/api/hash", poseidonRoutes);
+app.use('/api/ipfs', ipfsRoutes);
 
 // Start the server
 app.listen(PORT, () => {

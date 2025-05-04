@@ -119,6 +119,7 @@ export class RegisterComponent {
         saltCommitment: saltCommitment2,
         identityCommitment: identityCommitment2,
         deviceCommitment: deviceCommitment2,
+        shards: sharesBase64.slice(1),
         lastAuthTimestamp: new Date().toISOString().replace('Z', '+00:00')
         //maxAuthLevel: 10 // Default max auth level
       };
@@ -128,7 +129,8 @@ export class RegisterComponent {
 
       this.http.post('http://localhost:5010/api/auth/register', registrationData)
         .subscribe({
-          next: async (response) => {
+          next: async (response: any) => {
+            const userId = response.userId;
             // 7. Create and download JSON file with shares and ZKP inputs
             const jsonContent = JSON.stringify({
               //shares from index 1 to 4
@@ -164,6 +166,23 @@ export class RegisterComponent {
             localStorage.setItem('userSalt', userSalt);
             localStorage.setItem('deviceId', deviceId);
             localStorage.setItem('privateKey', wallet.privateKey);
+
+            //Upon user registration, send the shares from index 1 to 4 to the server
+        const sharesToUpload = sharesBase64.slice(1);
+        this.http.post('http://localhost:5010/api/ipfs/upload-shares', { 
+          base64Shares: sharesToUpload,
+          password: this.user.password,
+          userId: userId
+        })
+          .subscribe({
+            next: (response) => {
+              console.log('Shares sent successfully:', response);
+            },
+            error: (error) => {
+              console.error('Error sending shares:', error);
+            }
+          });
+
             // Redirect to login
             this.router.navigate(['/login']);
           },
@@ -171,6 +190,7 @@ export class RegisterComponent {
             alert('Error: ' + (err.error?.message || 'Registration failed'));
           }
         });
+        
 
     } catch (error) {
       console.error("Registration error:", error);
