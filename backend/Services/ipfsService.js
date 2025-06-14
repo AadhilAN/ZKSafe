@@ -108,7 +108,7 @@ async function uploadShareToIPFS(base64Share, shareIndex) {
 async function downloadShareFromIPFS(cid) {
   try {
     // Get content from IPFS gateway
-    const response = await axios.get(`https://gateway.pinata.cloud/ipfs/${cid}`);
+    const response = await axios.get(`https://sapphire-large-xerinae-883.mypinata.cloud/ipfs/${cid}`);
     
     if (!response.data || !response.data.encryptedShare || !response.data.iv) {
       throw new Error('Invalid data format from IPFS');
@@ -123,46 +123,6 @@ async function downloadShareFromIPFS(cid) {
     throw error;
   }
 }
-
-// Upload multiple shares to IPFS
-// async function uploadSharesToIPFS(base64Shares, startIndex = 0) {
-//   const cidPromises = base64Shares.map((share, index) => 
-//     uploadShareToIPFS(share, startIndex + index)
-//   );
-  
-//   return Promise.all(cidPromises);
-// }
-
-// async function uploadSharesToIPFS(base64Shares, startIndex = 0, maxRetries = 5) {
-//     const uploadWithRetry = async (share, shareIndex, retries = 0) => {
-//       try {
-//         return await uploadShareToIPFS(share, shareIndex);
-//       } catch (error) {
-//         if (retries < maxRetries) {
-//           console.log(`Retry ${retries + 1}/${maxRetries} for share ${shareIndex}`);
-//           await new Promise(resolve => setTimeout(resolve, 1000 * (retries + 1))); // Exponential backoff
-//           return uploadWithRetry(share, shareIndex, retries + 1);
-//         }
-//         throw error;
-//       }
-//     };
-  
-//     const uploadPromises = base64Shares.map((share, index) => 
-//       uploadWithRetry(share, startIndex + index)
-//         .then(cid => ({ success: true, shareIndex: startIndex + index, cid }))
-//         .catch(error => ({ success: false, shareIndex: startIndex + index, error: error.message }))
-//     );
-  
-//     const results = await Promise.all(uploadPromises);
-    
-//     const errors = results.filter(r => !r.success);
-    
-//     if (errors.length > 0) {
-//       throw new Error(`Failed to upload shares: ${JSON.stringify(errors)}`);
-//     }
-  
-//     return results.map(r => r.cid);
-//   }
 
 async function uploadSharesToIPFS(userId, base64Shares, password, startIndex = 0, maxRetries = 3) {
     const uploadWithRetry = async (share, shareIndex, retries = 0) => {
