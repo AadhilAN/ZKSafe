@@ -28,7 +28,7 @@ Project maintainers are responsible for clarifying standards of acceptable behav
 
 ## Reporting Guidelines
 
-If you are subject to or witness unacceptable behavior, please report it by contacting the project maintainer at your.email@example.com. All complaints will be reviewed and investigated promptly and fairly.
+If you are subject to or witness unacceptable behavior, please report it by contacting the project maintainer at aadhil.naleemdeen@gmail.com. All complaints will be reviewed and investigated promptly and fairly.
 
 ## Enforcement
 
