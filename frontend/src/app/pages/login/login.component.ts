@@ -23,7 +23,7 @@ export class LoginComponent implements OnInit {
   loading = false;
   loadingMessage = 'Processing...';
   showFileUpload = false;
-  verificationMethod: string = 'off-chain'; //Off-chain by defual
+  verificationMethod: string = 'off-chain';
   
   private apiUrl = 'http://localhost:5010/api/auth';
 
@@ -53,15 +53,6 @@ export class LoginComponent implements OnInit {
       return;
     }
 
-    const userShard = localStorage.getItem('userShard');
-    const userSalt = localStorage.getItem('userSalt');
-    const deviceId = localStorage.getItem('deviceId');
-    
-    if ((!userShard || !userSalt || !deviceId) && !this.circuitInput) {
-      alert('Please upload your key file');
-      return;
-    }
-
     this.loading = true;
     
     try {
@@ -80,6 +71,7 @@ export class LoginComponent implements OnInit {
         let userSaltValue;
         let deviceIdValue;
         const crypto = await import('crypto-js');
+        
         // Decrypt the user shard using password
         const encryptedShard = localStorage.getItem('userShard');
         if (encryptedShard) {
@@ -94,9 +86,9 @@ export class LoginComponent implements OnInit {
         } else {
           keyShareBase64 = null;
         }
+        
         userSaltValue = localStorage.getItem('userSalt');
         deviceIdValue = localStorage.getItem('deviceId');
-      //}
 
       if (!keyShareBase64 || !userSaltValue || !deviceIdValue) {
         alert('Missing required authentication data');
@@ -106,7 +98,6 @@ export class LoginComponent implements OnInit {
 
       // Convert Base64 key share to BigInt
       console.log("Key share base64:", keyShareBase64);
-      //let keyShare;
       
       // Convert userSalt and deviceId to BigInt safely
       let userSaltBigInt;
@@ -197,8 +188,6 @@ export class LoginComponent implements OnInit {
       
       // Load circuit artifacts
       const [wasm, zkey] = await Promise.all([
-        //fetch('assets/circuit/wallet_auth_circuit.wasm').then(r => r.arrayBuffer()),
-        //fetch('assets/final_0000.zkey').then(r => r.arrayBuffer())
         fetch('assets/circuit/wallet_auth_circuit.wasm').then(r => r.arrayBuffer()),
         fetch('assets/circuit/wallet_auth_circuit_0000.zkey').then(r => r.arrayBuffer())
       ]);
@@ -247,6 +236,31 @@ export class LoginComponent implements OnInit {
       localStorage.setItem('token', loginResponse.token);
       localStorage.setItem('email', loginResponse.email);
       sessionStorage.setItem('password', this.user.password);
+
+      this.loadingMessage = 'Fetching shares from IPFS...';
+    try {
+      const sharesResponse: any = await this.http.post(
+        'http://localhost:5010/api/ipfs/get-shards', 
+        {
+          password: this.user.password
+        },
+        {
+          headers: { Authorization: `${loginResponse.token}` }
+        }
+      ).toPromise();
+      
+      if (sharesResponse.success && sharesResponse.shares) {
+        const ipfsShares = sharesResponse.shares.map((share: any) => share.base64Share);
+        // Store in session storage
+        sessionStorage.setItem('tempShares', JSON.stringify(ipfsShares));
+        console.log('Successfully retrieved shares from IPFS');
+      } else {
+        throw new Error('Failed to fetch shares from IPFS');
+      }
+    } catch (ipfsError) {
+      console.error('Failed to fetch shares from IPFS:', ipfsError);
+      alert('Warning: Failed to retrieve wallet shares from IPFS. You may need to upload your key file for full functionality.');
+    }
       
       this.router.navigate(['/dashboard']);
       
@@ -299,5 +313,4 @@ export class LoginComponent implements OnInit {
     };
     reader.readAsText(file);
   }
-  
 }
