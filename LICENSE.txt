@@ -1,0 +1,101 @@
+ZKSafe Dual License
+
+Copyright (c) 2025 Mohamed Aadhil Naleemdeen
+
+ZKSafe is licensed under a dual-license model designed to promote academic and non-commercial innovation while preventing unauthorized commercial exploitation.
+
+================================================================================
+1. LICENSE OPTIONS
+================================================================================
+
+ZKSafe is available under the following license models:
+
+--------------------------------------------------------------------------------
+A. OPEN SOURCE LICENSE – GNU Affero General Public License (AGPL) v3.0
+--------------------------------------------------------------------------------
+
+This software is licensed under the terms of the GNU Affero General Public License v3.0, or (at your option) any later version, as published by the Free Software Foundation.
+
+You may use this license **only if you are**:
+
+- An individual user
+- A student, researcher, or academic institution
+- A non-profit organization
+- A for-profit organization with **less than USD $1 million** in total gross revenue (previous fiscal year)
+
+Under AGPL v3.0:
+- You must disclose complete source code, including any modifications, when used over a network.
+- You must include this license text and a valid SPDX identifier in all copies.
+- This software is provided without warranty, express or implied.
+
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+--------------------------------------------------------------------------------
+B. COMMERCIAL LICENSE – REQUIRED FOR LARGE ENTITIES
+--------------------------------------------------------------------------------
+
+Any company or organization whose total gross revenue exceeds **USD $1 million** (in the previous fiscal year), including subsidiaries and parent companies, **must obtain a commercial license** from the copyright holder.
+
+Commercial use includes (but is not limited to):
+- Internal deployment within proprietary systems
+- SaaS or hosted offerings
+- Integration into commercial products or services
+- Use in derivative works not licensed under AGPL v3.0
+
+To obtain a commercial license, contact:  
+📧 aadhil.naleemdeen@gmail.com  
+📌 Subject: “ZKSafe Commercial License Request”
+
+Use without a valid license is a violation of copyright and may result in legal action.
+
+================================================================================
+2. REVENUE THRESHOLD COMPLIANCE
+================================================================================
+
+- Revenue threshold applies to **total gross revenue** of the full legal entity, including subsidiaries and parent companies.
+- Organizations that cross the $1 million threshold must obtain a commercial license **within 30 days** after the end of the fiscal year in which the threshold is crossed.
+- By using ZKSafe, you agree to provide reasonable documentation for revenue verification if requested.
+
+================================================================================
+3. TRADEMARK USAGE
+================================================================================
+
+“ZKSafe” and the ZKSafe logo are trademarks of Mohamed Aadhil Naleemdeen.  
+You may not use the name, logo, or branding of ZKSafe in:
+- Marketing materials
+- Domain names or subdomains
+- Commercial derivatives
+- Advertising or promotions  
+…without prior **written consent** from the trademark owner.
+
+Violation of trademark use may result in legal action.
+
+================================================================================
+4. CONTRIBUTIONS
+================================================================================
+
+By contributing to ZKSafe (via pull request, issue, or other method), you agree that:
+
+- Your contributions are made under the AGPL v3.0 license.
+- You grant the copyright holder (Mohamed Aadhil Naleemdeen) a **perpetual, irrevocable right** to re-license your contributions under different terms, including commercial licenses.
+- Contributions may be used, modified, sublicensed, or redistributed by the copyright holder.
+
+If you do not agree with these terms, do not submit contributions.
+
+================================================================================
+5. LICENSE MODIFICATION CLAUSE
+================================================================================
+
+The copyright holder reserves the right to change the terms of this license for future versions of the software.  
+Such changes will **not affect previously released versions**, which remain governed by the license under which they were originally distributed.
+
+================================================================================
+6. SUMMARY
+================================================================================
+
+✓ Free for individuals, academics, students, and small/ethical startups  
+✘ Commercial use by companies earning over $1 million/year requires a commercial license
+
+Unsure whether you qualify? Reach out to:  
+📧 aadhil.naleemdeen@gmail.com
+
