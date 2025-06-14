@@ -67,7 +67,7 @@ For commercial use, please contact: aadhil.naleemdeen@gmail.com
 
 ## Contributing
 
-Contributions are welcome! Please read the CONTRIBUTING guidelines first.
+Contributions are welcome! Please read the [CONTRIBUTING](./CONTRIBUTING.md) guidelines first.
 Report issues or request features via GitHub Issues.
 
 ## Contact
