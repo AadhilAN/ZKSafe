@@ -21,7 +21,6 @@ You may use this license **only if you are**:
 - An individual user
 - A student, researcher, or academic institution
 - A non-profit organization
-- A for-profit organization with **less than USD $1 million** in total gross revenue (previous fiscal year)
 
 Under AGPL v3.0:
 - You must disclose complete source code, including any modifications, when used over a network.
