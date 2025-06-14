@@ -59,7 +59,7 @@ npm run dev
 
 ZKSafe is dual-licensed:
 
-- ✅ Free for individuals, students, academics, and startups under the **AGPL v3** license.
+- ✅ Free for individuals, students and academics under the **AGPL v3** license.
 - 💼 A **commercial license** is required for companies with $1M+ annual revenue.
 
 See [LICENSE.txt](./LICENSE.txt) for details.  
